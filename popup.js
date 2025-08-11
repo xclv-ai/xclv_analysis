@@ -1,4 +1,4 @@
-// XCLV Brand Analysis - Popup Script
+// XCLV Brand Analysis - Popup Script (FIXED)
 // Extension Control Interface with Gemini 2.5 API Management
 
 class PopupController {
@@ -594,14 +594,35 @@ class PopupController {
     return names[settingName] || settingName;
   }
 
+  // FIXED: Modern Promise-based messaging for Manifest V3
   async sendMessageToTab(action, data = null) {
-    if (!this.currentTab) return;
+    if (!this.currentTab) {
+      throw new Error('No active tab');
+    }
 
-    return new Promise((resolve) => {
-      chrome.tabs.sendMessage(this.currentTab.id, { action, data }, (response) => {
-        resolve(response);
-      });
-    });
+    try {
+      const response = await chrome.tabs.sendMessage(this.currentTab.id, { action, data });
+      return response;
+    } catch (error) {
+      // Handle cases where content script isn't loaded yet
+      if (error.message.includes('Could not establish connection')) {
+        // Try to inject content script
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: this.currentTab.id },
+            files: ['content.js']
+          });
+          
+          // Wait a moment and retry
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const response = await chrome.tabs.sendMessage(this.currentTab.id, { action, data });
+          return response;
+        } catch (retryError) {
+          throw new Error('Failed to communicate with page. Please refresh and try again.');
+        }
+      }
+      throw error;
+    }
   }
 
   async checkAnalysisStatus() {
@@ -616,7 +637,8 @@ class PopupController {
         this.updateUI();
       }
     } catch (error) {
-      console.error('Status check failed:', error);
+      // Content script might not be loaded yet, which is fine
+      console.log('Status check failed (content script not ready):', error.message);
     }
   }
 
