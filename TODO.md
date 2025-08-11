@@ -1,256 +1,329 @@
-# TODO - Future Development Iterations
+# XCLV Brand Analysis Extension - TODO
 
-This file tracks planned improvements and features for future versions of the XCLV Brand Analysis Extension.
+## 🚨 CRITICAL RESTORATION NEEDED
 
----
+**Core Functionality Broken**: Interactive Mode toggle exists in popup but actual mouseover analysis is not working. Users expect to hover over text elements and see blur effect + "Analyze Content" button, but this is currently broken.
 
-## 🔥 HIGH PRIORITY - Next Iteration (v1.3.0)
-
-### 🤖 LLM Integration Implementation
-- **CRITICAL: Connect Analysis Panel to Gemini API**
-  - Wire up checkbox selections to execute corresponding prompts from `prompts/` folder
-  - Fix `analyzeContent` action in background.js to process analysis types array
-  - Implement proper error handling for API failures in panel
-  - Add loading states during API calls with progress feedback
-  - Parse and display structured JSON responses in panel results sections
-
-### 🔧 Analysis Engine Completion
-- **Connect Prompts to Panel Logic**
-  - Map checkbox states to prompt file execution
-  - Implement `tone-of-voice-analysis.md` for ToV checkbox
-  - Implement `message-clarity-analysis.md` for clarity checkbox (create if missing)
-  - Implement `brand-archetype-analysis.md` for archetype checkbox
-  - Ensure proper JSON response parsing for each analysis type
-
-### 🎯 Panel Functionality Enhancement
-- **Results Display Optimization**
-  - Improve result HTML generation for each analysis type
-  - Add progress bars or score visualizations
-  - Implement collapsible sections for detailed insights
-  - Add copy-to-clipboard functionality for individual results
+**Current State**: Extension has sophisticated floating panel and API integration, but the main interactive feature (hover → analyze individual text elements) is not functional.
 
 ---
 
-## 🚀 MEDIUM PRIORITY - Version 1.3.x Series
+## 🎯 PHASE 1: Fix Interactive Mode Toggle (CRITICAL)
 
-### 📊 Advanced Analytics Features
-- **Real-time Brand Scoring**
-  - Implement live brand score calculation across all metrics
-  - Add brand consistency scoring across page elements
-  - Create comparative analysis against industry benchmarks
-  - Implement brand evolution tracking over time
+### Step 1.1: Fix Popup Toggle UI
+**File**: `popup.html`
+- [ ] Change current toggle to clear ACTIVE/DISABLED button
+- [ ] Replace text "Enable Interactive Mode" with toggle button showing current state
+- [ ] Add visual indicator (green = ACTIVE, gray = DISABLED)
+- [ ] Update button text to show "Interactive Mode: ACTIVE" or "Interactive Mode: DISABLED"
 
-### 🎨 Enhanced UI/UX
-- **Panel Improvements**
-  - Add themes (light/dark mode) for the analysis panel
-  - Implement panel resizing functionality
-  - Add keyboard shortcuts for panel operations
-  - Create panel presets for different analysis workflows
+### Step 1.2: Fix Message Passing
+**File**: `popup.js`
+- [ ] Update `enableInteractiveMode()` method to send proper message format
+- [ ] Update `disableInteractiveMode()` method to send proper message format
+- [ ] Add state tracking variable `isInteractiveModeActive`
+- [ ] Update toggle button visual state based on current mode
+- [ ] Add notification feedback: "Interactive mode activated - hover over text elements"
 
-### 🔍 Advanced Analysis Types
-- **Competitive Analysis**
-  - Compare brand voice against competitor pages
-  - Industry-specific archetype recommendations
-  - Cultural alignment assessment for global brands
-  - Brand authenticity scoring
-
-### 📈 Data Visualization
-- **Interactive Charts**
-  - Tone radar charts showing formality, warmth, authority
-  - Brand archetype confidence wheels
-  - Historical analysis trends (if storing data)
-  - Comparative brand positioning maps
+### Step 1.3: Fix Content Script Message Handling
+**File**: `content.js`
+- [ ] Verify `handleMessage()` method properly handles 'enableInteractiveMode' action
+- [ ] Verify `handleMessage()` method properly handles 'disableInteractiveMode' action
+- [ ] Ensure `InteractiveContentAnalyzer` instance exists and methods are called
+- [ ] Add console logging to verify messages are received
 
 ---
 
-## 🛠️ TECHNICAL IMPROVEMENTS - Version 1.4.x Series
+## 🎯 PHASE 2: Restore Mouseover Analysis (CRITICAL)
 
-### ⚡ Performance Optimization
-- **Content Processing**
-  - Implement web workers for heavy analysis processing
-  - Add intelligent content prioritization (headlines vs body text)
-  - Optimize large page content extraction
-  - Implement analysis result caching
+### Step 2.1: Complete InteractiveContentAnalyzer Class
+**File**: `content.js`
+- [ ] Implement missing `setupMouseListeners()` method:
+  ```javascript
+  setupMouseListeners() {
+    document.addEventListener('mouseover', (e) => this.handleMouseOver(e));
+    document.addEventListener('mouseout', (e) => this.handleMouseOut(e));
+  }
+  ```
 
-### 🔒 Security & Privacy
-- **Data Protection**
-  - Implement local-only analysis option
-  - Add data retention controls
-  - Create privacy-first mode with no external API calls
-  - Implement secure API key storage with encryption
+### Step 2.2: Implement Text Element Detection
+**File**: `content.js`
+- [ ] Implement `shouldAnalyzeElement(element)` method:
+  - Check if element contains text (minimum 20 characters)
+  - Exclude UI elements (navigation, menus, buttons)
+  - Target paragraphs, headings, spans with substantial text
+  - Return true/false for analysis eligibility
 
-### 🏗️ Architecture Improvements
-- **Modular System**
-  - Create plugin architecture for new analysis types
-  - Implement configurable prompt templates
-  - Add custom brand voice training capabilities
-  - Create brand guideline import/export functionality
+### Step 2.3: Implement Hover Visual Effects
+**File**: `content.js`
+- [ ] Implement `handleMouseOver(event)` method:
+  - Check if interactive mode is enabled
+  - Check if element should be analyzed
+  - Apply blur effect to element
+  - Show "Analyze Content" button near element
+  - Store reference to current element
 
-### 🌐 Multi-Language Support
-- **Internationalization**
-  - Add support for non-English content analysis
-  - Implement language-specific tone analysis
-  - Create cultural context awareness
-  - Add brand voice translation capabilities
+### Step 2.4: Implement Hover Cleanup
+**File**: `content.js`
+- [ ] Implement `handleMouseOut(event)` method:
+  - Remove blur effect from element
+  - Hide "Analyze Content" button
+  - Clear current element reference
 
----
+### Step 2.5: Create Analyze Button
+**File**: `content.js`
+- [ ] Implement `showAnalyzeButton(element, event)` method:
+  - Create floating button element
+  - Position near hovered text element
+  - Add click event listener
+  - Style with XCLV branding
+  - Show with smooth animation
 
-## 🎨 ADVANCED FEATURES - Version 1.5.x Series
+- [ ] Implement `hideAnalyzeButton()` method:
+  - Remove button from DOM
+  - Clear event listeners
+  - Clean up references
 
-### 🤖 AI-Powered Enhancements
-- **Smart Recommendations**
-  - Implement brand voice coaching suggestions
-  - Add automated A/B testing recommendations
-  - Create brand evolution pathway suggestions
-  - Implement context-aware copywriting suggestions
-
-### 📱 Cross-Platform Integration
-- **Extended Reach**
-  - Create companion mobile app for brand monitoring
-  - Implement browser sync for analysis history
-  - Add integration with popular CMS platforms
-  - Create API for third-party integrations
-
-### 📊 Enterprise Features
-- **Team Collaboration**
-  - Multi-user brand analysis dashboards
-  - Shared brand guidelines and scoring criteria
-  - Team approval workflows for brand content
-  - Enterprise-grade reporting and analytics
-
-### 🔄 Workflow Integration
-- **Process Automation**
-  - Integration with content management systems
-  - Automated brand compliance checking
-  - Real-time brand monitoring alerts
-  - Integration with design tools (Figma, Adobe)
-
----
-
-## 🐛 KNOWN ISSUES TO ADDRESS
-
-### Critical Fixes Needed
-- [ ] **LLM Integration**: Panel checkboxes don't actually trigger API calls yet
-- [ ] **Error Handling**: Improve user feedback when analysis fails
-- [ ] **Content Extraction**: Better handling of dynamic/SPA content
-- [ ] **Memory Management**: Panel doesn't clean up properly on page navigation
-
-### UX Improvements Needed
-- [ ] **Loading States**: Add better progress indicators during analysis
-- [ ] **Panel Positioning**: Remember user's preferred panel position
-- [ ] **Keyboard Navigation**: Add proper accessibility support
-- [ ] **Mobile Responsiveness**: Panel needs better mobile optimization
-
-### Technical Debt
-- [ ] **Code Organization**: Refactor content.js into smaller modules
-- [ ] **Error Logging**: Implement comprehensive error tracking
-- [ ] **Performance**: Optimize for large pages with lots of content
-- [ ] **Testing**: Add automated testing framework
+### Step 2.6: Add CSS Styles for Interactive Elements
+**File**: `content-styles.css` or inject styles in `content.js`
+- [ ] Add blur effect CSS class:
+  ```css
+  .xclv-analyzing-element {
+    filter: blur(1px);
+    transition: filter 0.2s ease;
+  }
+  ```
+- [ ] Add analyze button styles:
+  ```css
+  .xclv-analyze-button {
+    position: absolute;
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 9999;
+    animation: xclv-button-appear 0.2s ease;
+  }
+  ```
 
 ---
 
-## 📋 DEVELOPMENT WORKFLOW IMPROVEMENTS
+## 🎯 PHASE 3: Connect Analysis Pipeline (CRITICAL)
 
-### Documentation
-- [ ] Create comprehensive API documentation
-- [ ] Add inline code documentation with JSDoc
-- [ ] Create user manual with screenshots
-- [ ] Add troubleshooting guide for common issues
+### Step 3.1: Implement Button Click Handler
+**File**: `content.js`
+- [ ] Implement `handleAnalyzeButtonClick(element)` method:
+  - Extract text content from element
+  - Extract element context (surrounding text, page metadata)
+  - Show loading state on button
+  - Send analysis request to background service
+  - Handle response and show results
 
-### Testing Framework
-- [ ] Implement automated unit tests
-- [ ] Add integration tests for API communication
-- [ ] Create UI testing for panel functionality
-- [ ] Add performance benchmarking tests
+### Step 3.2: Integrate with Existing Background Service
+**File**: `content.js`
+- [ ] Update analysis request to use existing message format:
+  ```javascript
+  const response = await this.sendMessageSafely({
+    action: 'analyzeContent',
+    data: {
+      text: elementText,
+      url: window.location.href,
+      analysisTypes: ['tone-of-voice'] // Use existing ToV analysis
+    }
+  });
+  ```
 
-### Development Tools
-- [ ] Set up automated builds and releases
-- [ ] Create development environment setup guide
-- [ ] Add code quality tools (ESLint, Prettier)
-- [ ] Implement automated changelog generation
+### Step 3.3: Verify Background Service Integration
+**File**: `background.js`
+- [ ] Verify 'analyzeContent' action handler exists
+- [ ] Verify tone-of-voice-analysis.md prompt is loaded correctly
+- [ ] Verify Gemini API integration is working
+- [ ] Verify response format matches expected JSON structure
 
----
-
-## 🎯 VERSION ROADMAP
-
-### v1.3.0 - "LLM Integration" (Target: 1-2 weeks)
-- ✅ Complete floating panel implementation (DONE in v1.2.8)
-- 🔄 Wire up Gemini API to panel checkboxes
-- 🔄 Implement all three analysis types with proper prompts
-- 🔄 Add comprehensive error handling and user feedback
-
-### v1.3.5 - "Enhanced Analytics" (Target: 3-4 weeks)
-- Real-time brand scoring
-- Advanced data visualization
-- Enhanced result export options
-- Performance optimizations
-
-### v1.4.0 - "Enterprise Ready" (Target: 6-8 weeks)
-- Multi-language support
-- Advanced security features
-- Plugin architecture
-- Team collaboration features
-
-### v1.5.0 - "AI-Powered Intelligence" (Target: 10-12 weeks)
-- Smart recommendations engine
-- Automated brand coaching
-- Cross-platform integration
-- Advanced analytics dashboard
+### Step 3.4: Extract Element Text Properly
+**File**: `content.js`
+- [ ] Implement `extractElementContent(element)` method:
+  - Get element text content
+  - Include surrounding context if needed
+  - Clean up text (remove extra whitespace)
+  - Ensure minimum text length for analysis
+  - Return structured content object
 
 ---
 
-## 🔧 IMMEDIATE NEXT STEPS
+## 🎯 PHASE 4: Results Display System (HIGH PRIORITY)
 
-### For Developer Implementing LLM Integration:
+### Step 4.1: Create Analysis Results Popup
+**File**: `content.js`
+- [ ] Implement `showAnalysisResults(data, element)` method:
+  - Create floating results popup
+  - Position near analyzed element
+  - Parse tone analysis JSON response
+  - Display scores and recommendations
+  - Add close button functionality
 
-1. **Update background.js** - Fix the `analyzeContent` message handler to:
-   - Accept `analysisTypes` array from panel
-   - Load corresponding prompt files from `prompts/` folder
-   - Execute appropriate Gemini API calls
-   - Return structured JSON responses for each analysis type
+### Step 4.2: Parse Analysis Response
+**File**: `content.js`
+- [ ] Implement `parseAnalysisResponse(response)` method:
+  - Extract tone scores from JSON
+  - Extract brand personality description
+  - Extract recommendations
+  - Handle error responses gracefully
+  - Format for display in popup
 
-2. **Test Panel → API Flow**:
-   - User checks "Tone of Voice" checkbox
-   - Clicks "Analyze Page" 
-   - Panel sends analysisTypes: ['tone-of-voice'] to background
-   - Background loads `prompts/tone-of-voice-analysis.md`
-   - Executes Gemini API call with page content + prompt
-   - Returns structured response to panel
-   - Panel displays results in ToV section
+### Step 4.3: Style Results Popup
+**File**: `content-styles.css` or inject styles
+- [ ] Add results popup styles:
+  ```css
+  .xclv-results-popup {
+    position: absolute;
+    background: white;
+    border: 2px solid #2563eb;
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 300px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 10000;
+  }
+  ```
 
-3. **Create Missing Prompts** (if needed):
-   - Ensure `message-clarity-analysis.md` exists in prompts folder
-   - Verify all three prompt files return consistent JSON structures
-   - Test each prompt individually for quality responses
-
-4. **Error Handling**:
-   - Handle API key missing/invalid scenarios
-   - Manage rate limiting and quota issues
-   - Provide clear user feedback for all failure modes
-   - Implement retry logic for temporary failures
+### Step 4.4: Add Results Content Layout
+**File**: `content.js`
+- [ ] Create HTML structure for results:
+  - Header with "Analysis Results"
+  - Tone scores section
+  - Brand personality section
+  - Recommendations section
+  - Close button
 
 ---
 
-## 📝 NOTES FOR FUTURE DEVELOPERS
+## 🎯 PHASE 5: User Experience Polish (MEDIUM PRIORITY)
 
-### Code Organization Philosophy
-- Keep UI components separate from business logic
-- Use consistent error handling patterns throughout
-- Maintain clear separation between content scripts and background services
-- Document all public APIs and interfaces
+### Step 5.1: Add Loading States
+**File**: `content.js`
+- [ ] Show loading spinner on analyze button during API call
+- [ ] Add loading text: "Analyzing content..."
+- [ ] Disable button during analysis
+- [ ] Re-enable button after response
 
-### Brand Guidelines
-- Maintain XCLV professional design language
-- Use consistent color schemes and typography
-- Ensure all UI follows accessibility guidelines
-- Keep user experience simple and intuitive
+### Step 5.2: Add Error Handling
+**File**: `content.js`
+- [ ] Handle API call failures gracefully
+- [ ] Show error message in results popup
+- [ ] Provide retry option
+- [ ] Log errors for debugging
+
+### Step 5.3: Add Smooth Animations
+**File**: `content-styles.css`
+- [ ] Animate button appearance/disappearance
+- [ ] Animate blur effect on/off
+- [ ] Animate results popup show/hide
+- [ ] Add smooth transitions for all interactive elements
+
+### Step 5.4: Implement Content Caching
+**File**: `content.js`
+- [ ] Cache analysis results by text content hash
+- [ ] Check cache before making API calls
+- [ ] Implement cache expiration
+- [ ] Clear cache when interactive mode disabled
+
+---
+
+## 🎯 PHASE 6: Integration Testing (HIGH PRIORITY)
+
+### Step 6.1: Test Complete User Flow
+- [ ] **Test 1**: Enable interactive mode in popup → verify content script receives message
+- [ ] **Test 2**: Hover over text element → verify blur effect appears
+- [ ] **Test 3**: Verify "Analyze Content" button appears on hover
+- [ ] **Test 4**: Click analyze button → verify API call is made
+- [ ] **Test 5**: Verify analysis results are displayed correctly
+- [ ] **Test 6**: Disable interactive mode → verify cleanup works properly
+
+### Step 6.2: Test Error Scenarios
+- [ ] Test with invalid API key
+- [ ] Test with no internet connection
+- [ ] Test with very short text elements
+- [ ] Test with non-text elements
+- [ ] Test rapid hover/unhover actions
+
+### Step 6.3: Test Performance
+- [ ] Test on pages with many text elements
+- [ ] Verify no memory leaks during extended use
+- [ ] Test event listener cleanup
+- [ ] Verify smooth interactions on slow devices
+
+---
+
+## 🎯 PHASE 7: Documentation Updates (MEDIUM PRIORITY)
+
+### Step 7.1: Update README.md
+- [ ] Update feature description for interactive mode
+- [ ] Add step-by-step usage instructions
+- [ ] Update screenshots if needed
+- [ ] Document new keyboard shortcuts
+
+### Step 7.2: Update CHANGELOG.md
+- [ ] Document all fixes made
+- [ ] Update version to 1.2.11
+- [ ] List breaking changes if any
+- [ ] Add testing requirements section
+
+### Step 7.3: Update manifest.json
+- [ ] Increment version to 1.2.11
+- [ ] Update description if needed
+- [ ] Verify permissions are sufficient
+- [ ] Test extension loading
+
+---
+
+## 🚨 CRITICAL SUCCESS CRITERIA
+
+**Before marking as complete, verify this exact user flow works:**
+
+1. User opens extension popup
+2. User sees "Interactive Mode: DISABLED" button
+3. User clicks button → changes to "Interactive Mode: ACTIVE"
+4. User sees notification "Interactive mode activated - hover over text elements"
+5. User hovers over text on webpage → text blurs + "Analyze Content" button appears
+6. User clicks "Analyze Content" → button shows loading spinner
+7. Analysis results popup appears with tone scores and recommendations
+8. User can hover over different text elements and repeat process
+9. User clicks "Interactive Mode: ACTIVE" → changes to "DISABLED"
+10. All hover effects and buttons disappear
+
+**This flow must work reliably on multiple websites before considering the restoration complete.**
+
+---
+
+## 📋 IMPLEMENTATION NOTES
+
+### Development Order
+1. **Start with Phase 1** - Get toggle working properly
+2. **Move to Phase 2** - Get visual effects working
+3. **Implement Phase 3** - Connect to analysis pipeline
+4. **Complete Phase 4** - Add results display
+5. **Polish with Phase 5** - Add UX improvements
+6. **Test with Phase 6** - Comprehensive testing
+7. **Document with Phase 7** - Update documentation
+
+### Testing Strategy
+- Test each phase independently before moving to next
+- Use console.log extensively during development
+- Test on multiple websites (simple blog, complex e-commerce, etc.)
+- Test edge cases (very long text, very short text, etc.)
 
 ### Performance Considerations
-- Minimize memory usage for long-running pages
-- Optimize for mobile and low-power devices
-- Cache analysis results when appropriate
-- Use progressive enhancement for advanced features
+- Minimize DOM queries in mouseover handlers
+- Implement element caching where possible
+- Clean up event listeners properly
+- Avoid memory leaks during extended sessions
 
 ---
 
-*This TODO file should be updated with each release to reflect completed items and new priorities.*
+**Status**: Ready for implementation
+**Next Action**: Begin Phase 1 implementation
+**Target Version**: 1.2.11
+**Priority**: CRITICAL - Core functionality restoration
