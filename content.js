@@ -1,6 +1,641 @@
-// XCLV Brand Analysis - Content Script (FIXED)
-// Page Interaction and Real-time Analysis
+// XCLV Brand Analysis - Enhanced Content Script
+// Interactive Content Analysis with Debug Popup
 
+class InteractiveContentAnalyzer {
+  constructor() {
+    this.isHoverMode = false;
+    this.currentHighlight = null;
+    this.analyzeButton = null;
+    this.debugPopup = null;
+    this.lastAnalyzedElement = null;
+    this.animationId = null;
+  }
+
+  enable() {
+    this.isHoverMode = true;
+    this.setupMouseListeners();
+    this.injectStyles();
+    console.log('XCLV: Interactive analysis mode enabled');
+  }
+
+  disable() {
+    this.isHoverMode = false;
+    this.removeMouseListeners();
+    this.clearHighlight();
+    this.hideAnalyzeButton();
+    this.closeDebugPopup();
+    console.log('XCLV: Interactive analysis mode disabled');
+  }
+
+  injectStyles() {
+    if (document.getElementById('xclv-interactive-styles')) return;
+
+    const styles = document.createElement('style');
+    styles.id = 'xclv-interactive-styles';
+    styles.textContent = `
+      .xclv-highlight-frame {
+        position: absolute;
+        pointer-events: none;
+        border: 3px solid #4CAF50;
+        border-radius: 8px;
+        background: rgba(76, 175, 80, 0.1);
+        backdrop-filter: blur(2px);
+        box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 9998;
+        animation: xclv-pulse 2s infinite;
+      }
+
+      @keyframes xclv-pulse {
+        0%, 100% { 
+          box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+          border-color: #4CAF50;
+        }
+        50% { 
+          box-shadow: 0 6px 30px rgba(76, 175, 80, 0.5);
+          border-color: #66BB6A;
+        }
+      }
+
+      .xclv-analyze-button {
+        position: absolute;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        z-index: 9999;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: xclv-button-appear 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      @keyframes xclv-button-appear {
+        0% { 
+          opacity: 0; 
+          transform: scale(0.5) translateY(10px); 
+        }
+        100% { 
+          opacity: 1; 
+          transform: scale(1) translateY(0); 
+        }
+      }
+
+      .xclv-analyze-button:hover {
+        background: linear-gradient(135deg, #45a049, #4CAF50);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+      }
+
+      .xclv-debug-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 800px;
+        max-width: 90vw;
+        max-height: 80vh;
+        background: #1a1a1a;
+        color: #e0e0e0;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        overflow: hidden;
+        animation: xclv-popup-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .xclv-debug-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+      }
+
+      .xclv-debug-header {
+        background: linear-gradient(135deg, #333, #444);
+        padding: 20px;
+        border-bottom: 1px solid #555;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .xclv-debug-close {
+        background: none;
+        border: none;
+        color: #ccc;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+
+      .xclv-debug-tabs {
+        display: flex;
+        background: #2a2a2a;
+        border-bottom: 1px solid #444;
+      }
+
+      .xclv-debug-tab {
+        background: none;
+        border: none;
+        color: #ccc;
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 3px solid transparent;
+      }
+
+      .xclv-debug-tab.active {
+        color: #4CAF50;
+        border-bottom-color: #4CAF50;
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .xclv-debug-content {
+        padding: 0;
+        max-height: calc(80vh - 160px);
+        overflow-y: auto;
+      }
+
+      .xclv-debug-section {
+        padding: 20px;
+        border-bottom: 1px solid #333;
+      }
+
+      .xclv-debug-code {
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .xclv-debug-json {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        overflow-x: auto;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .xclv-debug-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: #999;
+      }
+
+      .xclv-spinner {
+        border: 3px solid #333;
+        border-top: 3px solid #4CAF50;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: xclv-spin 1s linear infinite;
+        margin-right: 15px;
+      }
+
+      @keyframes xclv-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .xclv-debug-tab-content {
+        display: none;
+      }
+
+      .xclv-debug-tab-content.active {
+        display: block;
+      }
+    `;
+    document.head.appendChild(styles);
+  }
+
+  setupMouseListeners() {
+    this.mouseOverHandler = this.handleMouseOver.bind(this);
+    this.mouseOutHandler = this.handleMouseOut.bind(this);
+    
+    document.addEventListener('mouseover', this.mouseOverHandler);
+    document.addEventListener('mouseout', this.mouseOutHandler);
+  }
+
+  removeMouseListeners() {
+    if (this.mouseOverHandler) {
+      document.removeEventListener('mouseover', this.mouseOverHandler);
+    }
+    if (this.mouseOutHandler) {
+      document.removeEventListener('mouseout', this.mouseOutHandler);
+    }
+  }
+
+  handleMouseOver(event) {
+    if (!this.isHoverMode) return;
+    
+    const element = event.target;
+    if (this.shouldAnalyzeElement(element)) {
+      this.highlightElement(element);
+      this.showAnalyzeButton(element);
+    }
+  }
+
+  handleMouseOut(event) {
+    if (!this.isHoverMode) return;
+    
+    const relatedTarget = event.relatedTarget;
+    
+    if (relatedTarget && (
+      relatedTarget.classList.contains('xclv-analyze-button') ||
+      relatedTarget.classList.contains('xclv-highlight-frame') ||
+      this.currentHighlight?.contains(relatedTarget)
+    )) {
+      return;
+    }
+    
+    setTimeout(() => {
+      if (!this.isMouseOverHighlightArea(event.clientX, event.clientY)) {
+        this.clearHighlight();
+        this.hideAnalyzeButton();
+      }
+    }, 100);
+  }
+
+  shouldAnalyzeElement(element) {
+    if (!element || !element.textContent) return false;
+    
+    const text = element.textContent.trim();
+    
+    if (text.length < 20 || text.length > 1000) return false;
+    
+    if (element.closest('.xclv-analysis-panel, .xclv-debug-popup, .xclv-highlight-frame, .xclv-analyze-button')) {
+      return false;
+    }
+    
+    const tagName = element.tagName.toLowerCase();
+    if (['script', 'style', 'meta', 'link', 'nav', 'header', 'footer'].includes(tagName)) {
+      return false;
+    }
+    
+    const contentElements = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'article', 'section', 'div'];
+    if (!contentElements.includes(tagName)) return false;
+    
+    return true;
+  }
+
+  highlightElement(element) {
+    this.clearHighlight();
+    
+    const rect = element.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    const highlight = document.createElement('div');
+    highlight.className = 'xclv-highlight-frame';
+    highlight.style.left = `${rect.left + scrollLeft - 5}px`;
+    highlight.style.top = `${rect.top + scrollTop - 5}px`;
+    highlight.style.width = `${rect.width + 10}px`;
+    highlight.style.height = `${rect.height + 10}px`;
+    
+    document.body.appendChild(highlight);
+    this.currentHighlight = highlight;
+    this.lastAnalyzedElement = element;
+  }
+
+  showAnalyzeButton(element) {
+    this.hideAnalyzeButton();
+    
+    const rect = element.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    const button = document.createElement('button');
+    button.className = 'xclv-analyze-button';
+    button.textContent = '🔍 Analyze Content';
+    button.style.left = `${rect.right + scrollLeft - 150}px`;
+    button.style.top = `${rect.top + scrollTop - 45}px`;
+    
+    button.addEventListener('click', () => {
+      this.analyzeElement(element);
+    });
+    
+    button.addEventListener('mouseenter', () => {
+      clearTimeout(this.hideTimeout);
+    });
+    
+    document.body.appendChild(button);
+    this.analyzeButton = button;
+  }
+
+  hideAnalyzeButton() {
+    if (this.analyzeButton) {
+      this.analyzeButton.remove();
+      this.analyzeButton = null;
+    }
+  }
+
+  clearHighlight() {
+    if (this.currentHighlight) {
+      this.currentHighlight.remove();
+      this.currentHighlight = null;
+    }
+  }
+
+  isMouseOverHighlightArea(x, y) {
+    if (!this.currentHighlight && !this.analyzeButton) return false;
+    
+    const elements = document.elementsFromPoint(x, y);
+    return elements.some(el => 
+      el.classList.contains('xclv-highlight-frame') ||
+      el.classList.contains('xclv-analyze-button') ||
+      el === this.lastAnalyzedElement
+    );
+  }
+
+  async analyzeElement(element) {
+    const text = element.textContent.trim();
+    const context = this.getElementContext(element);
+    
+    this.showDebugPopup();
+    this.updateDebugContent('loading');
+    
+    try {
+      const contentData = {
+        text: text,
+        context: context,
+        element: {
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id,
+          textLength: text.length
+        },
+        page: {
+          url: window.location.href,
+          title: document.title,
+          domain: window.location.hostname
+        }
+      };
+      
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'analyzeTextElement',
+          data: contentData
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      
+      this.updateDebugContent('result', {
+        parsedContent: contentData,
+        systemPrompt: response.systemPrompt || 'System prompt not available',
+        llmOutput: response.data || 'No LLM output available',
+        response: response
+      });
+      
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      this.updateDebugContent('error', { error: error.message });
+    }
+  }
+
+  getElementContext(element) {
+    const context = {
+      parentElement: element.parentElement?.tagName || 'none',
+      siblingCount: element.parentElement?.children.length || 0,
+      position: Array.from(element.parentElement?.children || []).indexOf(element),
+      hasImages: element.querySelectorAll('img').length > 0,
+      hasLinks: element.querySelectorAll('a').length > 0,
+      nearbyHeadings: this.getNearbyHeadings(element),
+      styling: this.getElementStyling(element)
+    };
+    
+    return context;
+  }
+
+  getNearbyHeadings(element) {
+    const headings = [];
+    let current = element;
+    
+    while (current && headings.length < 3) {
+      current = current.previousElementSibling || current.parentElement;
+      if (current && /^h[1-6]$/i.test(current.tagName)) {
+        headings.unshift({
+          level: current.tagName.toLowerCase(),
+          text: current.textContent.trim().substring(0, 100)
+        });
+      }
+    }
+    
+    return headings;
+  }
+
+  getElementStyling(element) {
+    const styles = window.getComputedStyle(element);
+    return {
+      fontSize: styles.fontSize,
+      fontWeight: styles.fontWeight,
+      color: styles.color,
+      backgroundColor: styles.backgroundColor,
+      display: styles.display,
+      position: styles.position
+    };
+  }
+
+  showDebugPopup() {
+    this.closeDebugPopup();
+    
+    const backdrop = document.createElement('div');
+    backdrop.className = 'xclv-debug-backdrop';
+    backdrop.addEventListener('click', () => this.closeDebugPopup());
+    
+    const popup = document.createElement('div');
+    popup.className = 'xclv-debug-popup';
+    popup.innerHTML = `
+      <div class="xclv-debug-header">
+        <h2 style="color: #4CAF50; margin: 0; font-size: 18px;">XCLV Content Analysis Debug</h2>
+        <button class="xclv-debug-close">&times;</button>
+      </div>
+      <div class="xclv-debug-tabs">
+        <button class="xclv-debug-tab active" data-tab="content">Parsed Content</button>
+        <button class="xclv-debug-tab" data-tab="prompt">System Prompt</button>
+        <button class="xclv-debug-tab" data-tab="output">LLM Output</button>
+        <button class="xclv-debug-tab" data-tab="raw">Raw Response</button>
+      </div>
+      <div class="xclv-debug-content">
+        <div class="xclv-debug-tab-content active" id="xclv-content-tab">
+          <div class="xclv-debug-loading">
+            <div class="xclv-spinner"></div>
+            <span>Extracting content...</span>
+          </div>
+        </div>
+        <div class="xclv-debug-tab-content" id="xclv-prompt-tab">
+          <div class="xclv-debug-loading">
+            <div class="xclv-spinner"></div>
+            <span>Preparing prompt...</span>
+          </div>
+        </div>
+        <div class="xclv-debug-tab-content" id="xclv-output-tab">
+          <div class="xclv-debug-loading">
+            <div class="xclv-spinner"></div>
+            <span>Analyzing with Gemini...</span>
+          </div>
+        </div>
+        <div class="xclv-debug-tab-content" id="xclv-raw-tab">
+          <div class="xclv-debug-loading">
+            <div class="xclv-spinner"></div>
+            <span>Processing response...</span>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(backdrop);
+    document.body.appendChild(popup);
+    
+    this.debugPopup = { backdrop, popup };
+    
+    popup.querySelector('.xclv-debug-close').addEventListener('click', () => {
+      this.closeDebugPopup();
+    });
+    
+    popup.querySelectorAll('.xclv-debug-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const tabName = e.target.dataset.tab;
+        this.switchDebugTab(tabName);
+      });
+    });
+    
+    popup.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  switchDebugTab(tabName) {
+    if (!this.debugPopup) return;
+    
+    const popup = this.debugPopup.popup;
+    
+    popup.querySelectorAll('.xclv-debug-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    popup.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    popup.querySelectorAll('.xclv-debug-tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    popup.querySelector(`#xclv-${tabName}-tab`).classList.add('active');
+  }
+
+  updateDebugContent(type, data = {}) {
+    if (!this.debugPopup) return;
+    
+    const popup = this.debugPopup.popup;
+    
+    if (type === 'loading') {
+      return;
+    }
+    
+    if (type === 'error') {
+      popup.querySelectorAll('.xclv-debug-tab-content').forEach(content => {
+        content.innerHTML = `
+          <div class="xclv-debug-section">
+            <h3 style="color: #4CAF50; margin: 0 0 15px 0;">Error</h3>
+            <div class="xclv-debug-code" style="color: #ff6b6b;">
+              ${data.error}
+            </div>
+          </div>
+        `;
+      });
+      return;
+    }
+    
+    if (type === 'result') {
+      const contentTab = popup.querySelector('#xclv-content-tab');
+      contentTab.innerHTML = `
+        <div class="xclv-debug-section">
+          <h3 style="color: #4CAF50; margin: 0 0 15px 0;">Extracted Text (${data.parsedContent.text.length} characters)</h3>
+          <div class="xclv-debug-code">${this.escapeHtml(data.parsedContent.text)}</div>
+        </div>
+        <div class="xclv-debug-section">
+          <h3 style="color: #4CAF50; margin: 0 0 15px 0;">Element Context</h3>
+          <div class="xclv-debug-json">${this.formatJSON(data.parsedContent.context)}</div>
+        </div>
+      `;
+      
+      const promptTab = popup.querySelector('#xclv-prompt-tab');
+      promptTab.innerHTML = `
+        <div class="xclv-debug-section">
+          <h3 style="color: #4CAF50; margin: 0 0 15px 0;">System Prompt Sent to Gemini</h3>
+          <div class="xclv-debug-code">${this.escapeHtml(data.systemPrompt)}</div>
+        </div>
+      `;
+      
+      const outputTab = popup.querySelector('#xclv-output-tab');
+      outputTab.innerHTML = `
+        <div class="xclv-debug-section">
+          <h3 style="color: #4CAF50; margin: 0 0 15px 0;">Gemini Analysis Result</h3>
+          <div class="xclv-debug-json">${this.formatJSON(data.llmOutput)}</div>
+        </div>
+      `;
+      
+      const rawTab = popup.querySelector('#xclv-raw-tab');
+      rawTab.innerHTML = `
+        <div class="xclv-debug-section">
+          <h3 style="color: #4CAF50; margin: 0 0 15px 0;">Complete API Response</h3>
+          <div class="xclv-debug-json">${this.formatJSON(data.response)}</div>
+        </div>
+      `;
+    }
+  }
+
+  formatJSON(obj) {
+    const json = JSON.stringify(obj, null, 2);
+    return json
+      .replace(/("([^"]+)":)/g, '<span style="color: #79C0FF;">$1</span>')
+      .replace(/"([^"]+)"/g, '<span style="color: #A5D6FF;">"$1"</span>')
+      .replace(/: (\d+)/g, ': <span style="color: #79C0FF;">$1</span>')
+      .replace(/: (true|false)/g, ': <span style="color: #FFA657;">$1</span>');
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  closeDebugPopup() {
+    if (this.debugPopup) {
+      this.debugPopup.backdrop.remove();
+      this.debugPopup.popup.remove();
+      this.debugPopup = null;
+    }
+  }
+}
+
+// Keep the rest of the existing content script classes...
 class WebContentExtractor {
   constructor() {
     this.isAnalyzing = false;
@@ -40,7 +675,6 @@ class WebContentExtractor {
         const elements = document.querySelectorAll(selector);
         elements.forEach(el => {
           if (el && el.textContent && el.textContent.trim().length > 20) {
-            // Skip elements that are likely UI components
             if (!this.isUIElement(el)) {
               content += el.textContent.trim() + ' ';
             }
@@ -228,7 +862,6 @@ class BrandAnalysisUI {
   }
 
   setupPanelEvents() {
-    // FIXED: Add null checks for all event listeners
     const closeBtn = this.panel.querySelector('.xclv-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
@@ -236,7 +869,6 @@ class BrandAnalysisUI {
       });
     }
 
-    // Tab switching
     const tabs = this.panel.querySelectorAll('.xclv-tab');
     tabs.forEach(tab => {
       if (tab) {
@@ -249,13 +881,11 @@ class BrandAnalysisUI {
       }
     });
 
-    // Make panel draggable
     this.makeDraggable();
   }
 
   switchTab(tabName) {
     try {
-      // Update active tab
       this.panel.querySelectorAll('.xclv-tab').forEach(tab => {
         tab.classList.remove('active');
       });
@@ -265,7 +895,6 @@ class BrandAnalysisUI {
         activeTab.classList.add('active');
       }
 
-      // Update active content
       this.panel.querySelectorAll('.xclv-tab-content').forEach(content => {
         content.classList.remove('active');
       });
@@ -336,19 +965,16 @@ class BrandAnalysisUI {
     if (!this.panel) return;
 
     try {
-      // Update Overview
       const overviewContent = this.panel.querySelector('#xclv-overview-content');
       if (overviewContent) {
         overviewContent.innerHTML = this.buildOverviewHTML(data);
       }
 
-      // Update Tone
       const toneContent = this.panel.querySelector('#xclv-tone-content');
       if (toneContent) {
         toneContent.innerHTML = this.buildToneHTML(data.tone);
       }
 
-      // Update Archetypes
       const archetypesContent = this.panel.querySelector('#xclv-archetypes-content');
       if (archetypesContent) {
         archetypesContent.innerHTML = this.buildArchetypesHTML(data.archetypes);
@@ -492,13 +1118,10 @@ class TextAnalysisOverlay {
     
     const text = element.textContent?.trim() || '';
     
-    // Skip if text too short or too long
     if (text.length < 10 || text.length > 200) return false;
     
-    // Skip if element is part of XCLV UI
     if (element.closest('.xclv-analysis-panel, .xclv-overlay')) return false;
     
-    // Skip script, style, and other non-content elements
     const tagName = element.tagName.toLowerCase();
     if (['script', 'style', 'meta', 'link'].includes(tagName)) return false;
     
@@ -508,10 +1131,8 @@ class TextAnalysisOverlay {
   async showAnalysisOverlay(element, event) {
     const text = element.textContent.trim();
     
-    // Check cache first
     let analysis = this.analysisCache.get(text);
     if (!analysis) {
-      // Mock analysis for now - in real implementation, this would call the background script
       analysis = this.getMockAnalysis(text);
       this.analysisCache.set(text, analysis);
     }
@@ -520,8 +1141,7 @@ class TextAnalysisOverlay {
   }
 
   getMockAnalysis(text) {
-    // Mock analysis - replace with actual API call
-    const clarityScore = Math.floor(Math.random() * 40) + 60; // 60-100
+    const clarityScore = Math.floor(Math.random() * 40) + 60;
     return {
       clarityScore,
       comprehensionLevel: clarityScore > 80 ? 'immediate' : clarityScore > 60 ? 'quick' : 'slow',
@@ -552,7 +1172,6 @@ class TextAnalysisOverlay {
       </div>
     `;
 
-    // Position the overlay
     try {
       const rect = element.getBoundingClientRect();
       overlay.style.position = 'absolute';
@@ -563,7 +1182,6 @@ class TextAnalysisOverlay {
       document.body.appendChild(overlay);
       this.activeOverlay = overlay;
 
-      // Auto-hide after 3 seconds
       setTimeout(() => this.hideAnalysisOverlay(), 3000);
     } catch (error) {
       console.warn('Failed to position overlay:', error);
@@ -585,12 +1203,13 @@ class TextAnalysisOverlay {
   }
 }
 
-// Main Content Script Controller
+// Enhanced XCLVContentController with interactive features
 class XCLVContentController {
   constructor() {
     this.extractor = new WebContentExtractor();
     this.ui = new BrandAnalysisUI();
     this.overlay = new TextAnalysisOverlay();
+    this.interactiveAnalyzer = new InteractiveContentAnalyzer();
     this.isAnalyzing = false;
   }
 
@@ -638,6 +1257,16 @@ class XCLVContentController {
             sendResponse({ success: true });
             break;
             
+          case 'enableInteractiveMode':
+            this.interactiveAnalyzer.enable();
+            sendResponse({ success: true });
+            break;
+            
+          case 'disableInteractiveMode':
+            this.interactiveAnalyzer.disable();
+            sendResponse({ success: true });
+            break;
+            
           case 'getStatus':
             sendResponse({
               isActive: this.isAnalyzing,
@@ -667,7 +1296,6 @@ class XCLVContentController {
     try {
       this.isAnalyzing = true;
       
-      // Extract page content
       const content = this.extractor.extractPageContent();
       const mainText = content.mainContent;
       
@@ -677,7 +1305,6 @@ class XCLVContentController {
         throw new Error('Insufficient content for analysis');
       }
       
-      // Send to background script for AI analysis
       const response = await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
           action: 'analyzeContent',
@@ -723,15 +1350,14 @@ class XCLVContentController {
     
     this.extractor.settings = { ...this.extractor.settings, ...settings };
     
-    // Apply settings
     if (settings.hasOwnProperty('hoverInsights')) {
       this.overlay.setEnabled(settings.hoverInsights);
     }
   }
 }
 
-// FIXED: Initialize with proper DOM ready checks
-function initializeXCLV() {
+// Initialize enhanced XCLV
+function initializeEnhancedXCLV() {
   if (window.xclvController) {
     console.log('XCLV already initialized');
     return;
@@ -740,21 +1366,20 @@ function initializeXCLV() {
   try {
     window.xclvController = new XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV Content Controller initialized successfully');
+    console.log('Enhanced XCLV Content Controller initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize XCLV Content Controller:', error);
+    console.error('Failed to initialize Enhanced XCLV Content Controller:', error);
   }
 }
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeXCLV);
+  document.addEventListener('DOMContentLoaded', initializeEnhancedXCLV);
 } else {
-  // DOM already loaded
-  setTimeout(initializeXCLV, 100);
+  setTimeout(initializeEnhancedXCLV, 100);
 }
 
-// Also initialize on dynamic content changes (for SPAs)
+// Handle SPA navigation
 if (window.MutationObserver) {
   const observer = new MutationObserver((mutations) => {
     const hasSignificantChanges = mutations.some(mutation => 
@@ -762,7 +1387,7 @@ if (window.MutationObserver) {
     );
     
     if (hasSignificantChanges && !window.xclvController) {
-      setTimeout(initializeXCLV, 500);
+      setTimeout(initializeEnhancedXCLV, 500);
     }
   });
   
