@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "XCLV Brand Analysis",
   "version": "1.0.0",
-  "description": "Strategic brand intelligence powered by Google Gemini. Real-time analysis of tone, archetypes, and message clarity for any webpage.",
+  "description": "Strategic brand intelligence powered by Google Gemini 2.5. Real-time analysis of tone, archetypes, and message clarity for any webpage.",
   
   "author": "XCLV Brand Intelligence",
   "homepage_url": "https://xclv.ai",
@@ -16,7 +16,7 @@
   
   "action": {
     "default_popup": "popup.html",
-    "default_title": "XCLV Brand Analysis - Powered by Gemini",
+    "default_title": "XCLV Brand Analysis - Powered by Gemini 2.5",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
@@ -104,11 +104,5 @@
     "matches": ["https://xclv.ai/*", "https://aistudio.google.com/*"]
   },
   
-  "short_name": "XCLV Analysis",
-  
-  "storage": {
-    "managed_schema": "schema.json"
-  },
-  
-  "update_url": "https://clients2.google.com/service/update2/crx"
+  "short_name": "XCLV Analysis"
 }
