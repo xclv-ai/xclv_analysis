@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.19
+// Click-to-Analyze Interactive Mode v1.2.20
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.19...');
+  console.log('XCLV: Content script loading v1.2.20...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -466,28 +466,39 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       }
     }
 
-    // Enhanced click handling for click-to-analyze mode
+    // ENHANCED: Much more robust click handling
     handleClick(event) {
-      console.log('XCLV: Click event detected:', {
+      console.log('🔍 XCLV: DETAILED Click event detected:', {
         target: event.target.tagName,
-        className: event.target.className,
+        targetClass: event.target.className,
+        targetId: event.target.id,
         isAnalyzableElement: this.isAnalyzableElement(event.target),
         isXCLVElement: this.isXCLVElement(event.target),
         isHoverMode: this.isHoverMode,
-        isAnalyzing: this.isAnalyzing
+        isAnalyzing: this.isAnalyzing,
+        eventPhase: event.eventPhase,
+        bubbles: event.bubbles,
+        cancelable: event.cancelable
       });
 
-      // Handle analyze button clicks - FIXED: Better button detection
-      if (event.target.classList?.contains('xclv-analyze-btn-inline') || 
-          event.target.closest('.xclv-analyze-btn-inline')) {
-        console.log('XCLV: Analyze button clicked!');
+      // PRIORITY 1: Handle analyze button clicks with multiple detection methods
+      const isAnalyzeButton = this.isAnalyzeButtonClick(event.target);
+      if (isAnalyzeButton) {
+        console.log('🚀 XCLV: ANALYZE BUTTON CLICKED - Processing...');
         event.preventDefault();
         event.stopPropagation();
-        this.analyzeElement(this.selectedElement);
+        event.stopImmediatePropagation(); // Stop all other handlers
+        
+        if (this.selectedElement) {
+          console.log('🚀 XCLV: Starting analysis for selected element');
+          this.analyzeElement(this.selectedElement);
+        } else {
+          console.warn('🚀 XCLV: No selected element to analyze');
+        }
         return;
       }
 
-      // Handle element selection
+      // PRIORITY 2: Handle element selection
       if (!this.isHoverMode || this.isAnalyzing) {
         console.log('XCLV: Click ignored - mode disabled or analyzing');
         return;
@@ -503,7 +514,7 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
 
       // Check if element is analyzable
       if (this.isAnalyzableElement(element)) {
-        console.log('XCLV: Analyzable element clicked!');
+        console.log('🎯 XCLV: Analyzable element clicked!');
         
         // If clicking on already selected element, deselect it
         if (element === this.selectedElement) {
@@ -519,7 +530,7 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         }
 
         // Select the new element
-        console.log('XCLV: Selecting new element');
+        console.log('🎯 XCLV: Selecting new element');
         this.selectElement(element);
         
         event.preventDefault();
@@ -529,6 +540,40 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
           tag: element.tagName,
           text: element.textContent?.trim().substring(0, 50)
         });
+      }
+    }
+
+    // NEW: Better button detection method
+    isAnalyzeButtonClick(target) {
+      try {
+        // Method 1: Direct class check
+        if (target && target.classList && target.classList.contains('xclv-analyze-btn-inline')) {
+          console.log('🔍 Method 1: Direct class match');
+          return true;
+        }
+        
+        // Method 2: Closest ancestor check
+        if (target && target.closest && target.closest('.xclv-analyze-btn-inline')) {
+          console.log('🔍 Method 2: Ancestor class match');
+          return true;
+        }
+        
+        // Method 3: Check if it's a child of our button
+        if (this.analyzeButton && target && this.analyzeButton.contains(target)) {
+          console.log('🔍 Method 3: Child of our button');
+          return true;
+        }
+        
+        // Method 4: Direct reference check
+        if (this.analyzeButton && target === this.analyzeButton) {
+          console.log('🔍 Method 4: Direct button reference');
+          return true;
+        }
+        
+        return false;
+      } catch (error) {
+        console.warn('XCLV: Error in isAnalyzeButtonClick:', error);
+        return false;
       }
     }
 
@@ -657,44 +702,72 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       }
     }
 
-    // Show analyze button that stays attached to selected element
+    // ENHANCED: Show analyze button with multiple click handlers
     showAnalyzeButton(element) {
-      console.log('XCLV: showAnalyzeButton called for:', element.tagName);
+      console.log('🔨 XCLV: showAnalyzeButton called for:', element.tagName);
       
       this.hideAnalyzeButton(); // Remove any existing button
 
       const rect = element.getBoundingClientRect();
       console.log('XCLV: Element rect:', rect);
       
+      // Create button element
       this.analyzeButton = document.createElement('button');
       this.analyzeButton.className = 'xclv-analyze-btn-inline xclv-btn-selected';
       this.analyzeButton.innerHTML = '🔍 ANALYZE CONTENT';
       this.analyzeButton.title = 'Click to analyze this selected text element';
       
-      // FIXED: Add explicit click event listener to button
+      // CRITICAL: Multiple event binding strategies
+      
+      // Strategy 1: Direct click event listener
       this.analyzeButton.addEventListener('click', (e) => {
-        console.log('XCLV: Button click event fired directly!');
+        console.log('🚀 STRATEGY 1: Direct button click fired!');
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         this.analyzeElement(this.selectedElement);
-      });
+      }, true); // Use capture phase
       
-      // Position the button next to the element - FIXED POSITIONING
+      // Strategy 2: Mousedown as backup
+      this.analyzeButton.addEventListener('mousedown', (e) => {
+        console.log('🚀 STRATEGY 2: Button mousedown fired!');
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+      
+      // Strategy 3: Mouseup as another backup
+      this.analyzeButton.addEventListener('mouseup', (e) => {
+        console.log('🚀 STRATEGY 3: Button mouseup fired!');
+        e.preventDefault();
+        e.stopPropagation();
+        // Small delay to see if click fires first
+        setTimeout(() => {
+          console.log('🚀 STRATEGY 3: Mouseup backup trigger');
+          this.analyzeElement(this.selectedElement);
+        }, 10);
+      }, true);
+      
+      // Strategy 4: Pointer events
+      this.analyzeButton.addEventListener('pointerdown', (e) => {
+        console.log('🚀 STRATEGY 4: Button pointerdown fired!');
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+      
+      // Position the button next to the element
       this.analyzeButton.style.position = 'fixed';
       this.analyzeButton.style.left = `${rect.left}px`;
       this.analyzeButton.style.top = `${rect.bottom + 8}px`;
       this.analyzeButton.style.zIndex = '999999';
       
-      // Ensure button stays in viewport - IMPROVED LOGIC
-      const buttonWidth = 160; // Approximate button width
-      const buttonHeight = 40; // Approximate button height
+      // Ensure button stays in viewport
+      const buttonWidth = 160;
+      const buttonHeight = 40;
       
-      // Adjust horizontal position if would go off screen
       if (rect.left + buttonWidth > window.innerWidth) {
         this.analyzeButton.style.left = `${window.innerWidth - buttonWidth - 10}px`;
       }
       
-      // Adjust vertical position if would go off screen
       if (rect.bottom + buttonHeight > window.innerHeight) {
         this.analyzeButton.style.top = `${rect.top - buttonHeight - 8}px`;
       }
@@ -704,23 +777,31 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       this.analyzeButton.style.visibility = 'visible';
       this.analyzeButton.style.opacity = '1';
       this.analyzeButton.style.pointerEvents = 'auto';
+      this.analyzeButton.style.cursor = 'pointer';
       
+      // Add to DOM
       document.body.appendChild(this.analyzeButton);
       
-      console.log('XCLV: Analyze button created and attached:', {
+      console.log('🔨 XCLV: Analyze button created with multiple event handlers:', {
         element: element.tagName,
         buttonElement: this.analyzeButton,
         buttonInDOM: document.body.contains(this.analyzeButton),
-        buttonRect: {
-          left: this.analyzeButton.style.left,
-          top: this.analyzeButton.style.top,
-          zIndex: this.analyzeButton.style.zIndex
-        }
+        buttonRect: this.analyzeButton.getBoundingClientRect()
       });
+      
+      // Test button existence after a moment
+      setTimeout(() => {
+        if (this.analyzeButton && document.body.contains(this.analyzeButton)) {
+          console.log('✅ XCLV: Button confirmed in DOM and ready for clicks');
+        } else {
+          console.error('❌ XCLV: Button not found in DOM after creation');
+        }
+      }, 100);
     }
 
     hideAnalyzeButton() {
       if (this.analyzeButton) {
+        console.log('🗑️ XCLV: Removing analyze button');
         this.analyzeButton.remove();
         this.analyzeButton = null;
       }
@@ -731,6 +812,8 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
 
       try {
         this.isAnalyzing = true;
+        console.log('🔬 XCLV: Starting analysis for element:', element.tagName);
+        
         const text = element.textContent.trim();
         
         // Show debug popup if in debug mode
@@ -1047,7 +1130,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.19');
+      console.log('XCLV: Content Controller created v1.2.20');
     }
 
     initialize() {
@@ -1248,7 +1331,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.19');
+    console.log('XCLV: Content Controller initialized successfully v1.2.20');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1308,6 +1391,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.19 loaded successfully');
+console.log('XCLV: Content script v1.2.20 loaded successfully');
 
 } // End of duplicate loading check
