@@ -1,409 +1,352 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>XCLV Debug Console</title>
-    <style>
-        body {
-            width: 800px;
-            height: 600px;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: #ffffff;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XCLV Debug Console</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
 
-        .debug-header {
-            background: #2d2d2d;
-            padding: 15px 20px;
-            border-bottom: 1px solid #444;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .debug-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-        .debug-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #00ff88;
-        }
+    .debug-header {
+      background: linear-gradient(135deg, #333, #444);
+      padding: 15px 20px;
+      border-bottom: 1px solid #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .debug-status {
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+    .debug-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #4CAF50;
+      margin: 0;
+    }
 
-        .status-active { background: #00ff88; color: #000; }
-        .status-error { background: #ff4444; color: #fff; }
-        .status-waiting { background: #ffaa00; color: #000; }
+    .debug-subtitle {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
 
-        .debug-tabs {
-            display: flex;
-            background: #2d2d2d;
-            border-bottom: 1px solid #444;
-        }
+    .debug-tabs {
+      display: flex;
+      background: #2a2a2a;
+      border-bottom: 1px solid #444;
+    }
 
-        .debug-tab {
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            color: #aaa;
-            cursor: pointer;
-            font-size: 14px;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s ease;
-        }
+    .debug-tab {
+      background: none;
+      border: none;
+      color: #ccc;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+      font-size: 13px;
+    }
 
-        .debug-tab:hover {
-            background: #333;
-            color: #fff;
-        }
+    .debug-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
 
-        .debug-tab.active {
-            color: #00ff88;
-            border-bottom-color: #00ff88;
-            background: #333;
-        }
+    .debug-tab.active {
+      color: #4CAF50;
+      border-bottom-color: #4CAF50;
+      background: rgba(76, 175, 80, 0.1);
+    }
 
-        .debug-content {
-            height: calc(100vh - 120px);
-            overflow-y: auto;
-            padding: 0;
-        }
+    .debug-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
 
-        .debug-panel {
-            display: none;
-            padding: 20px;
-            height: 100%;
-            box-sizing: border-box;
-        }
+    .debug-section {
+      padding: 20px;
+      border-bottom: 1px solid #333;
+    }
 
-        .debug-panel.active {
-            display: block;
-        }
+    .debug-section:last-child {
+      border-bottom: none;
+    }
 
-        .debug-section {
-            margin-bottom: 25px;
-            background: #2a2a2a;
-            border-radius: 8px;
-            overflow: hidden;
-        }
+    .debug-section h3 {
+      margin: 0 0 15px 0;
+      color: #4CAF50;
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-        .debug-section-header {
-            background: #333;
-            padding: 12px 16px;
-            font-weight: bold;
-            color: #00ff88;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .debug-code {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
-        .debug-section-content {
-            padding: 16px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
+    .debug-json {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
 
-        .debug-section.collapsed .debug-section-content {
-            display: none;
-        }
+    .json-key { color: #79C0FF; }
+    .json-string { color: #A5D6FF; }
+    .json-number { color: #79C0FF; }
+    .json-boolean { color: #FFA657; }
 
-        .collapse-indicator {
-            transition: transform 0.2s ease;
-        }
+    .debug-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: #999;
+    }
 
-        .collapsed .collapse-indicator {
-            transform: rotate(-90deg);
-        }
+    .spinner {
+      border: 3px solid #333;
+      border-top: 3px solid #4CAF50;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
+    }
 
-        .debug-text {
-            background: #1a1a1a;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #e0e0e0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        .debug-json {
-            background: #1a1a1a;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #e0e0e0;
-            white-space: pre;
-            overflow: auto;
-            max-height: 250px;
-        }
+    .debug-tab-content {
+      display: none;
+    }
 
-        .debug-actions {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+    .debug-tab-content.active {
+      display: block;
+    }
 
-        .debug-btn {
-            padding: 10px 16px;
-            background: #00ff88;
-            color: #000;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
+    .debug-stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
 
-        .debug-btn:hover {
-            background: #00cc6a;
-            transform: translateY(-1px);
-        }
+    .stat-item {
+      background: #2a2a2a;
+      padding: 10px 15px;
+      border-radius: 6px;
+      border: 1px solid #444;
+    }
 
-        .debug-btn:disabled {
-            background: #555;
-            color: #888;
-            cursor: not-allowed;
-            transform: none;
-        }
+    .stat-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
 
-        .debug-btn.secondary {
-            background: #444;
-            color: #fff;
-        }
+    .stat-value {
+      font-size: 14px;
+      color: #4CAF50;
+      font-weight: 600;
+    }
 
-        .debug-btn.secondary:hover {
-            background: #555;
-        }
-
-        .timestamp {
-            color: #888;
-            font-size: 11px;
-            margin-bottom: 8px;
-        }
-
-        .error-message {
-            background: #442222;
-            border: 1px solid #ff4444;
-            border-radius: 4px;
-            padding: 12px;
-            color: #ff8888;
-            margin-bottom: 15px;
-        }
-
-        .success-message {
-            background: #224422;
-            border: 1px solid #44ff44;
-            border-radius: 4px;
-            padding: 12px;
-            color: #88ff88;
-            margin-bottom: 15px;
-        }
-
-        .debug-metric {
-            display: inline-block;
-            background: #333;
-            padding: 6px 12px;
-            border-radius: 4px;
-            margin-right: 10px;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-
-        .metric-label {
-            color: #aaa;
-            margin-right: 8px;
-        }
-
-        .metric-value {
-            color: #00ff88;
-            font-weight: bold;
-        }
-
-        .scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .scrollbar::-webkit-scrollbar-track {
-            background: #2a2a2a;
-        }
-
-        .scrollbar::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 4px;
-        }
-
-        .scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #666;
-        }
-    </style>
+    .error-message {
+      background: #2a1f1f;
+      border: 1px solid #ff4444;
+      border-radius: 6px;
+      padding: 15px;
+      color: #ff6b6b;
+    }
+  </style>
 </head>
 <body>
+  <div class="debug-container">
     <div class="debug-header">
-        <div class="debug-title">🔍 XCLV Debug Console</div>
-        <div id="debugStatus" class="debug-status status-waiting">Waiting</div>
+      <div>
+        <h2 class="debug-title">XCLV Content Analysis Debug</h2>
+        <div class="debug-subtitle">Real-time LLM analysis inspection</div>
+      </div>
     </div>
-
+    
     <div class="debug-tabs">
-        <button class="debug-tab active" data-tab="extraction">Content Extraction</button>
-        <button class="debug-tab" data-tab="prompts">AI Prompts</button>
-        <button class="debug-tab" data-tab="responses">AI Responses</button>
-        <button class="debug-tab" data-tab="logs">Live Logs</button>
+      <button class="debug-tab active" onclick="switchTab('content')">Parsed Content</button>
+      <button class="debug-tab" onclick="switchTab('prompt')">System Prompt</button>
+      <button class="debug-tab" onclick="switchTab('output')">LLM Output</button>
+      <button class="debug-tab" onclick="switchTab('raw')">Raw Response</button>
     </div>
-
+    
     <div class="debug-content">
-        <!-- Content Extraction Tab -->
-        <div id="extraction" class="debug-panel active">
-            <div class="debug-actions">
-                <button id="extractContentBtn" class="debug-btn">Extract Content</button>
-                <button id="testAnalysisBtn" class="debug-btn">Test Analysis</button>
-                <button id="clearLogsBtn" class="debug-btn secondary">Clear Logs</button>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>📄 Extracted Content</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="timestamp" id="extractionTimestamp">No extraction performed yet</div>
-                    <div class="debug-metric">
-                        <span class="metric-label">Length:</span>
-                        <span class="metric-value" id="contentLength">0</span>
-                    </div>
-                    <div class="debug-metric">
-                        <span class="metric-label">Words:</span>
-                        <span class="metric-value" id="contentWords">0</span>
-                    </div>
-                    <div class="debug-metric">
-                        <span class="metric-label">Elements:</span>
-                        <span class="metric-value" id="contentElements">0</span>
-                    </div>
-                    <div class="debug-text scrollbar" id="extractedContent">Click "Extract Content" to see what will be analyzed</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>🎯 Content Metadata</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-json scrollbar" id="contentMetadata">{}</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>🔧 Element Analysis</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-json scrollbar" id="elementAnalysis">{}</div>
-                </div>
-            </div>
+      <div class="debug-tab-content active" id="content-tab">
+        <div class="debug-loading">
+          <div class="spinner"></div>
+          <span>Waiting for content analysis...</span>
         </div>
-
-        <!-- AI Prompts Tab -->
-        <div id="prompts" class="debug-panel">
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>🧠 System Prompt</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-text scrollbar" id="systemPrompt">No system prompt available</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>📝 User Prompt</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-text scrollbar" id="userPrompt">No user prompt available</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>🚀 Complete Request</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-json scrollbar" id="apiRequest">{}</div>
-                </div>
-            </div>
+      </div>
+      
+      <div class="debug-tab-content" id="prompt-tab">
+        <div class="debug-loading">
+          <div class="spinner"></div>
+          <span>Waiting for system prompt...</span>
         </div>
-
-        <!-- AI Responses Tab -->
-        <div id="responses" class="debug-panel">
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>📥 Raw AI Response</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="timestamp" id="responseTimestamp">No response received yet</div>
-                    <div class="debug-json scrollbar" id="rawResponse">{}</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>🎨 Parsed Analysis</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-json scrollbar" id="parsedResponse">{}</div>
-                </div>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>⚠️ Errors & Issues</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div id="responseErrors">No errors detected</div>
-                </div>
-            </div>
+      </div>
+      
+      <div class="debug-tab-content" id="output-tab">
+        <div class="debug-loading">
+          <div class="spinner"></div>
+          <span>Waiting for LLM output...</span>
         </div>
-
-        <!-- Live Logs Tab -->
-        <div id="logs" class="debug-panel">
-            <div class="debug-actions">
-                <button id="startLoggingBtn" class="debug-btn">Start Live Logging</button>
-                <button id="exportLogsBtn" class="debug-btn secondary">Export Logs</button>
-            </div>
-
-            <div class="debug-section">
-                <div class="debug-section-header" onclick="toggleSection(this)">
-                    <span>📊 Live Activity Log</span>
-                    <span class="collapse-indicator">▼</span>
-                </div>
-                <div class="debug-section-content">
-                    <div class="debug-text scrollbar" id="liveLog" style="max-height: 400px;">Live logging will appear here...</div>
-                </div>
-            </div>
+      </div>
+      
+      <div class="debug-tab-content" id="raw-tab">
+        <div class="debug-loading">
+          <div class="spinner"></div>
+          <span>Waiting for raw response...</span>
         </div>
+      </div>
     </div>
+  </div>
 
-    <script src="debug-popup.js"></script>
+  <script>
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.debug-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.debug-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    function formatJSON(obj) {
+      const json = JSON.stringify(obj, null, 2);
+      return json
+        .replace(/("([^"]+)":)/g, '<span class="json-key">$1</span>')
+        .replace(/"([^"]+)"/g, '<span class="json-string">"$1"</span>')
+        .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function updateDebugData(type, data) {
+      if (type === 'content') {
+        document.getElementById('content-tab').innerHTML = `
+          <div class="debug-section">
+            <div class="debug-stats">
+              <div class="stat-item">
+                <div class="stat-label">Text Length</div>
+                <div class="stat-value">${data.text.length} chars</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Element</div>
+                <div class="stat-value">${data.element.tagName}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Context</div>
+                <div class="stat-value">${data.context.parentElement}</div>
+              </div>
+            </div>
+            <h3>Extracted Text</h3>
+            <div class="debug-code">${escapeHtml(data.text)}</div>
+          </div>
+          <div class="debug-section">
+            <h3>Element Context</h3>
+            <div class="debug-json">${formatJSON(data.context)}</div>
+          </div>
+          <div class="debug-section">
+            <h3>Element Information</h3>
+            <div class="debug-json">${formatJSON(data.element)}</div>
+          </div>
+        `;
+      }
+      
+      if (type === 'prompt') {
+        document.getElementById('prompt-tab').innerHTML = `
+          <div class="debug-section">
+            <h3>System Prompt Sent to Gemini</h3>
+            <div class="debug-code">${escapeHtml(data)}</div>
+          </div>
+        `;
+      }
+      
+      if (type === 'output') {
+        document.getElementById('output-tab').innerHTML = `
+          <div class="debug-section">
+            <h3>Gemini Analysis Result</h3>
+            <div class="debug-json">${formatJSON(data)}</div>
+          </div>
+        `;
+      }
+      
+      if (type === 'raw') {
+        document.getElementById('raw-tab').innerHTML = `
+          <div class="debug-section">
+            <h3>Complete API Response</h3>
+            <div class="debug-json">${formatJSON(data)}</div>
+          </div>
+        `;
+      }
+      
+      if (type === 'error') {
+        const errorContent = `
+          <div class="debug-section">
+            <h3>Error</h3>
+            <div class="error-message">${escapeHtml(data)}</div>
+          </div>
+        `;
+        document.querySelectorAll('.debug-tab-content').forEach(content => {
+          content.innerHTML = errorContent;
+        });
+      }
+    }
+
+    // Listen for messages from parent extension
+    if (window.chrome && chrome.runtime) {
+      chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.action === 'updateDebug') {
+          updateDebugData(request.type, request.data);
+        }
+      });
+    }
+  </script>
 </body>
 </html>
