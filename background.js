@@ -1,104 +1,76 @@
-// XCLV Brand Analysis - Enhanced Background Service Worker
-// Supports interactive text element analysis with detailed debugging
+// XCLV Brand Analysis - Enhanced Background Service with Dynamic Prompt Loading
+// Supports loading prompts from separate .md files for better maintainability
 
-class BrandAnalysisService {
+class PromptManager {
   constructor() {
-    this.apiKey = null;
-    this.selectedModel = 'gemini-2.5-flash';
-    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
+    this.prompts = new Map();
     this.isInitialized = false;
   }
 
   async initialize() {
     try {
-      const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
-      this.apiKey = result.geminiApiKey;
-      this.selectedModel = result.selectedModel || 'gemini-2.5-flash';
+      // Load all prompts from the prompts folder
+      await Promise.all([
+        this.loadPrompt('comprehensive-brand-analysis'),
+        this.loadPrompt('tone-of-voice-analysis'), 
+        this.loadPrompt('brand-archetype-analysis'),
+        this.loadPrompt('text-element-analysis')
+      ]);
+      
       this.isInitialized = true;
-      console.log('XCLV: Brand Analysis Service initialized');
+      console.log('XCLV: Prompt Manager initialized with', this.prompts.size, 'prompts');
     } catch (error) {
-      console.error('Failed to initialize Brand Analysis Service:', error);
+      console.error('XCLV: Failed to initialize prompts:', error);
+      this.fallbackToBuiltInPrompts();
     }
   }
 
-  async analyzeContent(data) {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    if (!this.apiKey) {
-      throw new Error('Gemini API key not configured');
-    }
-
-    const systemPrompt = this.buildAnalysisPrompt(data);
-    
+  async loadPrompt(promptName) {
     try {
-      const response = await this.callGeminiAPI(systemPrompt, data);
-      return {
-        success: true,
-        data: response,
-        systemPrompt: systemPrompt,
-        metadata: {
-          model: this.selectedModel,
-          timestamp: new Date().toISOString(),
-          url: data.url
-        }
-      };
+      const response = await fetch(chrome.runtime.getURL(`prompts/${promptName}.md`));
+      if (response.ok) {
+        const content = await response.text();
+        this.prompts.set(promptName, content);
+        console.log(`XCLV: Loaded prompt: ${promptName}`);
+      } else {
+        throw new Error(`Failed to load prompt: ${promptName}`);
+      }
     } catch (error) {
-      console.error('Analysis failed:', error);
-      throw new Error(`Analysis failed: ${error.message}`);
+      console.error(`XCLV: Error loading prompt ${promptName}:`, error);
+      // Fallback to built-in prompt if file loading fails
+      this.prompts.set(promptName, this.getBuiltInPrompt(promptName));
     }
   }
 
-  async analyzeTextElement(data) {
+  getPrompt(promptName, variables = {}) {
     if (!this.isInitialized) {
-      await this.initialize();
+      console.warn('XCLV: Prompt Manager not initialized, using built-in prompts');
+      return this.getBuiltInPrompt(promptName, variables);
     }
 
-    if (!this.apiKey) {
-      throw new Error('Gemini API key not configured');
+    let prompt = this.prompts.get(promptName);
+    if (!prompt) {
+      console.warn(`XCLV: Prompt ${promptName} not found, using built-in fallback`);
+      return this.getBuiltInPrompt(promptName, variables);
     }
 
-    const systemPrompt = this.buildTextElementPrompt(data);
-    
-    try {
-      const response = await this.callGeminiAPI(systemPrompt, data);
-      return {
-        success: true,
-        data: response,
-        systemPrompt: systemPrompt,
-        parsedContent: data,
-        metadata: {
-          model: this.selectedModel,
-          timestamp: new Date().toISOString(),
-          element: data.element,
-          url: data.page.url
-        }
-      };
-    } catch (error) {
-      console.error('Text element analysis failed:', error);
-      return {
-        success: false,
-        error: `Text analysis failed: ${error.message}`,
-        systemPrompt: systemPrompt,
-        parsedContent: data,
-        metadata: {
-          model: this.selectedModel,
-          timestamp: new Date().toISOString(),
-          element: data.element,
-          url: data.page.url
-        }
-      };
-    }
+    // Replace template variables
+    Object.keys(variables).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      prompt = prompt.replace(regex, variables[key]);
+    });
+
+    return prompt;
   }
 
-  buildAnalysisPrompt(data) {
-    return `You are XCLV, a strategic brand analysis expert specializing in the LiveBranding methodology.
+  getBuiltInPrompt(promptName, variables = {}) {
+    const prompts = {
+      'comprehensive-brand-analysis': `You are XCLV, a strategic brand analysis expert specializing in the LiveBranding methodology.
 
-Analyze the following web content for brand intelligence:
+Analyze the following web content for comprehensive brand intelligence:
 
-WEBSITE: ${data.url}
-CONTENT: ${data.text}
+WEBSITE: ${variables.url || 'Unknown'}
+CONTENT: ${variables.text || 'No content provided'}
 
 Provide a comprehensive JSON analysis with these sections:
 
@@ -110,7 +82,7 @@ Provide a comprehensive JSON analysis with these sections:
 - innovation: score 0-100 (0=traditional/conservative, 100=cutting-edge/disruptive)
 - dominantTone: brief description of overall voice
 - brandPersonality: one-sentence brand character description
-- recommendations: array of specific improvements with area and insight
+- recommendations: array of specific improvements
 - culturalAlignment: how well the brand fits current cultural trends
 
 2. BRAND ARCHETYPE ANALYSIS:
@@ -118,27 +90,22 @@ Provide a comprehensive JSON analysis with these sections:
 - secondaryArchetype: {name, score, evidence array}
 - recommendations: array with archetype and rationale
 - brandEvolution: suggested direction for brand development
-- archetypeMix: description of archetype combination
 
-Return ONLY valid JSON. No markdown, no explanations, just the analysis object.`;
-  }
+Return ONLY valid JSON. No markdown, no explanations, just the analysis object.`,
 
-  buildTextElementPrompt(data) {
-    const contextInfo = data.context ? JSON.stringify(data.context, null, 2) : 'No context available';
-    
-    return `You are XCLV, a strategic brand analysis expert. Analyze this specific text element for brand messaging effectiveness.
+      'text-element-analysis': `You are XCLV, a strategic brand analysis expert. Analyze this specific text element for brand messaging effectiveness.
 
-TEXT TO ANALYZE: "${data.text}"
+TEXT TO ANALYZE: "${variables.text || 'No text provided'}"
 
 ELEMENT CONTEXT:
-- Tag: ${data.element.tagName}
-- Class: ${data.element.className || 'none'}
-- ID: ${data.element.id || 'none'}
-- Text Length: ${data.element.textLength} characters
-- Page: ${data.page.title} (${data.page.url})
+- Tag: ${variables.element?.tagName || 'unknown'}
+- Class: ${variables.element?.className || 'none'}
+- ID: ${variables.element?.id || 'none'}
+- Text Length: ${variables.element?.textLength || 0} characters
+- Page: ${variables.page?.title || 'Unknown'} (${variables.page?.url || 'unknown'})
 
 CONTEXT DATA:
-${contextInfo}
+${JSON.stringify(variables.context || {}, null, 2)}
 
 Provide a focused JSON analysis:
 
@@ -161,7 +128,7 @@ Provide a focused JSON analysis:
   "recommendations": [
     {
       "area": "clarity" | "tone" | "positioning",
-      "suggestion": "specific improvement",
+      "suggestion": "specific improvement", 
       "impact": "expected result"
     }
   ],
@@ -172,7 +139,123 @@ Provide a focused JSON analysis:
   }
 }
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON.`
+    };
+
+    return prompts[promptName] || 'Default analysis prompt not available.';
+  }
+
+  fallbackToBuiltInPrompts() {
+    console.log('XCLV: Using built-in prompts as fallback');
+    this.isInitialized = true;
+  }
+}
+
+class BrandAnalysisService {
+  constructor() {
+    this.apiKey = null;
+    this.selectedModel = 'gemini-2.5-flash';
+    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
+    this.isInitialized = false;
+    this.promptManager = new PromptManager();
+  }
+
+  async initialize() {
+    try {
+      const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
+      this.apiKey = result.geminiApiKey;
+      this.selectedModel = result.selectedModel || 'gemini-2.5-flash';
+      
+      // Initialize prompt manager
+      await this.promptManager.initialize();
+      
+      this.isInitialized = true;
+      console.log('XCLV: Brand Analysis Service initialized');
+    } catch (error) {
+      console.error('Failed to initialize Brand Analysis Service:', error);
+    }
+  }
+
+  async analyzeContent(data) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    if (!this.apiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+
+    const systemPrompt = this.promptManager.getPrompt('comprehensive-brand-analysis', {
+      url: data.url,
+      text: data.text
+    });
+    
+    try {
+      const response = await this.callGeminiAPI(systemPrompt, data);
+      return {
+        success: true,
+        data: response,
+        systemPrompt: systemPrompt,
+        metadata: {
+          model: this.selectedModel,
+          timestamp: new Date().toISOString(),
+          url: data.url,
+          promptType: 'comprehensive-brand-analysis'
+        }
+      };
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      throw new Error(`Analysis failed: ${error.message}`);
+    }
+  }
+
+  async analyzeTextElement(data) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    if (!this.apiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+
+    const systemPrompt = this.promptManager.getPrompt('text-element-analysis', {
+      text: data.text,
+      element: data.element,
+      page: data.page,
+      context: data.context
+    });
+    
+    try {
+      const response = await this.callGeminiAPI(systemPrompt, data);
+      return {
+        success: true,
+        data: response,
+        systemPrompt: systemPrompt,
+        parsedContent: data,
+        metadata: {
+          model: this.selectedModel,
+          timestamp: new Date().toISOString(),
+          element: data.element,
+          url: data.page?.url,
+          promptType: 'text-element-analysis'
+        }
+      };
+    } catch (error) {
+      console.error('Text element analysis failed:', error);
+      return {
+        success: false,
+        error: `Text analysis failed: ${error.message}`,
+        systemPrompt: systemPrompt,
+        parsedContent: data,
+        metadata: {
+          model: this.selectedModel,
+          timestamp: new Date().toISOString(),
+          element: data.element,
+          url: data.page?.url,
+          promptType: 'text-element-analysis'
+        }
+      };
+    }
   }
 
   async callGeminiAPI(prompt, data) {
@@ -273,6 +356,16 @@ Return ONLY valid JSON.`;
       throw new Error(`Connection test failed: ${error.message}`);
     }
   }
+
+  // Method to get available prompts
+  getAvailablePrompts() {
+    return Array.from(this.promptManager.prompts.keys());
+  }
+
+  // Method to reload prompts (useful for development)
+  async reloadPrompts() {
+    await this.promptManager.initialize();
+  }
 }
 
 // Initialize service
@@ -334,6 +427,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       brandAnalysisService.selectedModel = request.data.selectedModel;
       sendResponse({ success: true });
       break;
+
+    case 'getAvailablePrompts':
+      sendResponse({ 
+        success: true, 
+        prompts: brandAnalysisService.getAvailablePrompts() 
+      });
+      break;
+
+    case 'reloadPrompts':
+      brandAnalysisService.reloadPrompts()
+        .then(() => {
+          sendResponse({ success: true, message: 'Prompts reloaded successfully' });
+        })
+        .catch(error => {
+          sendResponse({ success: false, error: error.message });
+        });
+      return true;
       
     default:
       console.warn('Unknown action:', request.action);
