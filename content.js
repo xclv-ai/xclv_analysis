@@ -1,4 +1,4 @@
-// XCLV Brand Analysis - Content Script
+// XCLV Brand Analysis - Content Script (FIXED)
 // Page Interaction and Real-time Analysis
 
 class WebContentExtractor {
@@ -36,25 +36,54 @@ class WebContentExtractor {
     let content = '';
     
     selectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(el => {
-        if (el.textContent && el.textContent.trim().length > 20) {
-          content += el.textContent.trim() + ' ';
-        }
-      });
+      try {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          if (el && el.textContent && el.textContent.trim().length > 20) {
+            // Skip elements that are likely UI components
+            if (!this.isUIElement(el)) {
+              content += el.textContent.trim() + ' ';
+            }
+          }
+        });
+      } catch (error) {
+        console.warn(`Failed to extract content from selector ${selector}:`, error);
+      }
     });
     
     return content.trim();
   }
 
+  isUIElement(element) {
+    const uiIndicators = [
+      'cookie', 'popup', 'modal', 'overlay', 'banner',
+      'navigation', 'menu', 'header', 'footer', 'sidebar'
+    ];
+    
+    const elementText = (element.textContent || '').toLowerCase();
+    const elementClass = (element.className || '').toLowerCase();
+    const elementId = (element.id || '').toLowerCase();
+    
+    return uiIndicators.some(indicator => 
+      elementText.includes(indicator) || 
+      elementClass.includes(indicator) || 
+      elementId.includes(indicator)
+    );
+  }
+
   extractHeadlines() {
-    return Array.from(document.querySelectorAll('h1, h2, h3'))
-      .map(el => ({
-        text: el.textContent.trim(),
-        level: el.tagName.toLowerCase(),
-        position: this.getElementPosition(el)
-      }))
-      .filter(h => h.text.length > 0);
+    try {
+      return Array.from(document.querySelectorAll('h1, h2, h3'))
+        .map(el => ({
+          text: el.textContent.trim(),
+          level: el.tagName.toLowerCase(),
+          position: this.getElementPosition(el)
+        }))
+        .filter(h => h.text.length > 0);
+    } catch (error) {
+      console.warn('Failed to extract headlines:', error);
+      return [];
+    }
   }
 
   extractCTAs() {
@@ -68,64 +97,87 @@ class WebContentExtractor {
     
     const ctas = [];
     ctaSelectors.forEach(selector => {
-      document.querySelectorAll(selector).forEach(el => {
-        const text = el.textContent.trim();
-        if (text.length > 0 && text.length < 100) {
-          ctas.push({
-            text: text,
-            type: el.tagName.toLowerCase(),
-            position: this.getElementPosition(el)
-          });
-        }
-      });
+      try {
+        document.querySelectorAll(selector).forEach(el => {
+          const text = el.textContent.trim();
+          if (text.length > 0 && text.length < 100) {
+            ctas.push({
+              text: text,
+              type: el.tagName.toLowerCase(),
+              position: this.getElementPosition(el)
+            });
+          }
+        });
+      } catch (error) {
+        console.warn(`Failed to extract CTAs from selector ${selector}:`, error);
+      }
     });
     
     return ctas;
   }
 
   extractNavigation() {
-    const navElements = document.querySelectorAll('nav, .navigation, .menu');
     const navigation = [];
     
-    navElements.forEach(nav => {
-      const links = nav.querySelectorAll('a');
-      links.forEach(link => {
-        const text = link.textContent.trim();
-        if (text.length > 0) {
-          navigation.push({
-            text: text,
-            href: link.href || '',
-            position: this.getElementPosition(link)
-          });
-        }
+    try {
+      const navElements = document.querySelectorAll('nav, .navigation, .menu');
+      navElements.forEach(nav => {
+        const links = nav.querySelectorAll('a');
+        links.forEach(link => {
+          const text = link.textContent.trim();
+          if (text.length > 0) {
+            navigation.push({
+              text: text,
+              href: link.href || '',
+              position: this.getElementPosition(link)
+            });
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.warn('Failed to extract navigation:', error);
+    }
     
     return navigation;
   }
 
   extractMetadata() {
-    const title = document.title || '';
-    const description = document.querySelector('meta[name="description"]')?.content || '';
-    const keywords = document.querySelector('meta[name="keywords"]')?.content || '';
-    
-    return {
-      title,
-      description,
-      keywords,
-      url: window.location.href,
-      domain: window.location.hostname
-    };
+    try {
+      const title = document.title || '';
+      const description = document.querySelector('meta[name="description"]')?.content || '';
+      const keywords = document.querySelector('meta[name="keywords"]')?.content || '';
+      
+      return {
+        title,
+        description,
+        keywords,
+        url: window.location.href,
+        domain: window.location.hostname
+      };
+    } catch (error) {
+      console.warn('Failed to extract metadata:', error);
+      return {
+        title: '',
+        description: '',
+        keywords: '',
+        url: window.location.href,
+        domain: window.location.hostname
+      };
+    }
   }
 
   getElementPosition(element) {
-    const rect = element.getBoundingClientRect();
-    return {
-      top: rect.top + window.scrollY,
-      left: rect.left + window.scrollX,
-      width: rect.width,
-      height: rect.height
-    };
+    try {
+      const rect = element.getBoundingClientRect();
+      return {
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height
+      };
+    } catch (error) {
+      return { top: 0, left: 0, width: 0, height: 0 };
+    }
   }
 }
 
@@ -176,16 +228,25 @@ class BrandAnalysisUI {
   }
 
   setupPanelEvents() {
-    // Close button
-    this.panel.querySelector('.xclv-close-btn').addEventListener('click', () => {
-      this.hidePanel();
-    });
+    // FIXED: Add null checks for all event listeners
+    const closeBtn = this.panel.querySelector('.xclv-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.hidePanel();
+      });
+    }
 
     // Tab switching
-    this.panel.querySelectorAll('.xclv-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        this.switchTab(e.target.dataset.tab);
-      });
+    const tabs = this.panel.querySelectorAll('.xclv-tab');
+    tabs.forEach(tab => {
+      if (tab) {
+        tab.addEventListener('click', (e) => {
+          const tabName = e.target.dataset.tab;
+          if (tabName) {
+            this.switchTab(tabName);
+          }
+        });
+      }
     });
 
     // Make panel draggable
@@ -193,21 +254,35 @@ class BrandAnalysisUI {
   }
 
   switchTab(tabName) {
-    // Update active tab
-    this.panel.querySelectorAll('.xclv-tab').forEach(tab => {
-      tab.classList.remove('active');
-    });
-    this.panel.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    try {
+      // Update active tab
+      this.panel.querySelectorAll('.xclv-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      const activeTab = this.panel.querySelector(`[data-tab="${tabName}"]`);
+      if (activeTab) {
+        activeTab.classList.add('active');
+      }
 
-    // Update active content
-    this.panel.querySelectorAll('.xclv-tab-content').forEach(content => {
-      content.classList.remove('active');
-    });
-    this.panel.querySelector(`#xclv-${tabName}-content`).classList.add('active');
+      // Update active content
+      this.panel.querySelectorAll('.xclv-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      const activeContent = this.panel.querySelector(`#xclv-${tabName}-content`);
+      if (activeContent) {
+        activeContent.classList.add('active');
+      }
+    } catch (error) {
+      console.warn('Failed to switch tab:', error);
+    }
   }
 
   makeDraggable() {
     const header = this.panel.querySelector('.xclv-panel-header');
+    if (!header) return;
+
     let isDragging = false;
     let currentX;
     let currentY;
@@ -236,7 +311,9 @@ class BrandAnalysisUI {
 
     document.addEventListener('mouseup', () => {
       isDragging = false;
-      header.style.cursor = 'grab';
+      if (header) {
+        header.style.cursor = 'grab';
+      }
     });
   }
 
@@ -258,17 +335,27 @@ class BrandAnalysisUI {
   updateAnalysisResults(data) {
     if (!this.panel) return;
 
-    // Update Overview
-    const overviewContent = this.panel.querySelector('#xclv-overview-content');
-    overviewContent.innerHTML = this.buildOverviewHTML(data);
+    try {
+      // Update Overview
+      const overviewContent = this.panel.querySelector('#xclv-overview-content');
+      if (overviewContent) {
+        overviewContent.innerHTML = this.buildOverviewHTML(data);
+      }
 
-    // Update Tone
-    const toneContent = this.panel.querySelector('#xclv-tone-content');
-    toneContent.innerHTML = this.buildToneHTML(data.tone);
+      // Update Tone
+      const toneContent = this.panel.querySelector('#xclv-tone-content');
+      if (toneContent) {
+        toneContent.innerHTML = this.buildToneHTML(data.tone);
+      }
 
-    // Update Archetypes
-    const archetypesContent = this.panel.querySelector('#xclv-archetypes-content');
-    archetypesContent.innerHTML = this.buildArchetypesHTML(data.archetypes);
+      // Update Archetypes
+      const archetypesContent = this.panel.querySelector('#xclv-archetypes-content');
+      if (archetypesContent) {
+        archetypesContent.innerHTML = this.buildArchetypesHTML(data.archetypes);
+      }
+    } catch (error) {
+      console.warn('Failed to update analysis results:', error);
+    }
   }
 
   buildOverviewHTML(data) {
@@ -401,6 +488,8 @@ class TextAnalysisOverlay {
   }
 
   shouldAnalyzeElement(element) {
+    if (!element) return false;
+    
     const text = element.textContent?.trim() || '';
     
     // Skip if text too short or too long
@@ -464,17 +553,21 @@ class TextAnalysisOverlay {
     `;
 
     // Position the overlay
-    const rect = element.getBoundingClientRect();
-    overlay.style.position = 'absolute';
-    overlay.style.left = `${rect.left + window.scrollX}px`;
-    overlay.style.top = `${rect.bottom + window.scrollY + 5}px`;
-    overlay.style.zIndex = '10000';
+    try {
+      const rect = element.getBoundingClientRect();
+      overlay.style.position = 'absolute';
+      overlay.style.left = `${rect.left + window.scrollX}px`;
+      overlay.style.top = `${rect.bottom + window.scrollY + 5}px`;
+      overlay.style.zIndex = '10000';
 
-    document.body.appendChild(overlay);
-    this.activeOverlay = overlay;
+      document.body.appendChild(overlay);
+      this.activeOverlay = overlay;
 
-    // Auto-hide after 3 seconds
-    setTimeout(() => this.hideAnalysisOverlay(), 3000);
+      // Auto-hide after 3 seconds
+      setTimeout(() => this.hideAnalysisOverlay(), 3000);
+    } catch (error) {
+      console.warn('Failed to position overlay:', error);
+    }
   }
 
   hideAnalysisOverlay() {
@@ -502,59 +595,70 @@ class XCLVContentController {
   }
 
   initialize() {
-    this.setupMessageListener();
-    this.overlay.setupMouseoverAnalysis();
-    console.log('XCLV Brand Analysis content script initialized');
+    try {
+      this.setupMessageListener();
+      this.overlay.setupMouseoverAnalysis();
+      console.log('XCLV Brand Analysis content script initialized');
+    } catch (error) {
+      console.error('Failed to initialize XCLV:', error);
+    }
   }
 
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      switch (request.action) {
-        case 'startAnalysis':
-          this.startAnalysis().then(sendResponse);
-          return true;
-          
-        case 'stopAnalysis':
-          this.stopAnalysis();
-          sendResponse({ success: true });
-          break;
-          
-        case 'showPanel':
-          this.ui.showPanel();
-          sendResponse({ success: true });
-          break;
-          
-        case 'hidePanel':
-          this.ui.hidePanel();
-          sendResponse({ success: true });
-          break;
-          
-        case 'toggleAnalysis':
-          if (this.isAnalyzing) {
+      try {
+        switch (request.action) {
+          case 'startAnalysis':
+            this.startAnalysis().then(sendResponse).catch(error => {
+              sendResponse({ success: false, error: error.message });
+            });
+            return true;
+            
+          case 'stopAnalysis':
             this.stopAnalysis();
-          } else {
-            this.startAnalysis();
-          }
-          sendResponse({ success: true });
-          break;
-          
-        case 'getStatus':
-          sendResponse({
-            isActive: this.isAnalyzing,
-            data: this.extractor.analysisData
-          });
-          break;
-          
-        case 'getAnalysisData':
-          sendResponse({
-            data: this.extractor.analysisData
-          });
-          break;
-          
-        case 'updateSettings':
-          this.updateSettings(request.data);
-          sendResponse({ success: true });
-          break;
+            sendResponse({ success: true });
+            break;
+            
+          case 'showPanel':
+            this.ui.showPanel();
+            sendResponse({ success: true });
+            break;
+            
+          case 'hidePanel':
+            this.ui.hidePanel();
+            sendResponse({ success: true });
+            break;
+            
+          case 'toggleAnalysis':
+            if (this.isAnalyzing) {
+              this.stopAnalysis();
+            } else {
+              this.startAnalysis();
+            }
+            sendResponse({ success: true });
+            break;
+            
+          case 'getStatus':
+            sendResponse({
+              isActive: this.isAnalyzing,
+              data: this.extractor.analysisData
+            });
+            break;
+            
+          case 'getAnalysisData':
+            sendResponse({
+              data: this.extractor.analysisData
+            });
+            break;
+            
+          case 'updateSettings':
+            this.updateSettings(request.data);
+            sendResponse({ success: true });
+            break;
+        }
+      } catch (error) {
+        console.error('Message handler error:', error);
+        sendResponse({ success: false, error: error.message });
       }
     });
   }
@@ -567,12 +671,14 @@ class XCLVContentController {
       const content = this.extractor.extractPageContent();
       const mainText = content.mainContent;
       
+      console.log('XCLV: Extracted content length:', mainText.length);
+      
       if (!mainText || mainText.length < 50) {
         throw new Error('Insufficient content for analysis');
       }
       
       // Send to background script for AI analysis
-      const response = await new Promise((resolve) => {
+      const response = await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
           action: 'analyzeContent',
           data: {
@@ -580,8 +686,16 @@ class XCLVContentController {
             url: window.location.href,
             metadata: content.metadata
           }
-        }, resolve);
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
       });
+      
+      console.log('XCLV: Background response:', response);
       
       if (response && response.success) {
         this.extractor.analysisData = response.data;
@@ -605,6 +719,8 @@ class XCLVContentController {
   }
 
   updateSettings(settings) {
+    if (!settings) return;
+    
     this.extractor.settings = { ...this.extractor.settings, ...settings };
     
     // Apply settings
@@ -614,13 +730,44 @@ class XCLVContentController {
   }
 }
 
+// FIXED: Initialize with proper DOM ready checks
+function initializeXCLV() {
+  if (window.xclvController) {
+    console.log('XCLV already initialized');
+    return;
+  }
+
+  try {
+    window.xclvController = new XCLVContentController();
+    window.xclvController.initialize();
+    console.log('XCLV Content Controller initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize XCLV Content Controller:', error);
+  }
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const controller = new XCLVContentController();
-    controller.initialize();
-  });
+  document.addEventListener('DOMContentLoaded', initializeXCLV);
 } else {
-  const controller = new XCLVContentController();
-  controller.initialize();
+  // DOM already loaded
+  setTimeout(initializeXCLV, 100);
+}
+
+// Also initialize on dynamic content changes (for SPAs)
+if (window.MutationObserver) {
+  const observer = new MutationObserver((mutations) => {
+    const hasSignificantChanges = mutations.some(mutation => 
+      mutation.type === 'childList' && mutation.addedNodes.length > 0
+    );
+    
+    if (hasSignificantChanges && !window.xclvController) {
+      setTimeout(initializeXCLV, 500);
+    }
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 }
