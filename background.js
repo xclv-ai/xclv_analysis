@@ -77,7 +77,18 @@ class BrandAnalysisService {
       };
     } catch (error) {
       console.error('Text element analysis failed:', error);
-      throw new Error(`Text analysis failed: ${error.message}`);
+      return {
+        success: false,
+        error: `Text analysis failed: ${error.message}`,
+        systemPrompt: systemPrompt,
+        parsedContent: data,
+        metadata: {
+          model: this.selectedModel,
+          timestamp: new Date().toISOString(),
+          element: data.element,
+          url: data.page.url
+        }
+      };
     }
   }
 
@@ -217,11 +228,22 @@ Return ONLY valid JSON.`;
 
     const result = await response.json();
     
-    if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
-      throw new Error('Invalid API response format');
+    // Enhanced error checking for the response structure
+    if (!result.candidates || !Array.isArray(result.candidates) || result.candidates.length === 0) {
+      throw new Error('No candidates in API response');
     }
 
-    const text = result.candidates[0].content.parts[0].text;
+    const candidate = result.candidates[0];
+    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+      throw new Error('Invalid candidate structure in API response');
+    }
+
+    const part = candidate.content.parts[0];
+    if (!part.text) {
+      throw new Error('No text content in API response');
+    }
+
+    const text = part.text;
     
     try {
       // Clean the response text
@@ -280,7 +302,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.error('Text element analysis failed:', error);
           sendResponse({ 
             success: false, 
-            error: error.message 
+            error: error.message,
+            systemPrompt: 'Error occurred before prompt generation',
+            parsedContent: request.data,
+            metadata: {
+              model: brandAnalysisService.selectedModel,
+              timestamp: new Date().toISOString(),
+              element: request.data.element,
+              url: request.data.page?.url || 'unknown'
+            }
           });
         });
       return true;
