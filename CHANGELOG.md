@@ -5,6 +5,53 @@ All notable changes to the XCLV Brand Analysis Extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2025-08-11
+
+### 🎯 Floating Analysis Panel Implementation
+- **NEW: Complete Brand Analysis Panel** - Professional floating panel with draggable, minimizable interface
+- **NEW: Analysis Type Checkboxes** - Users can select which analysis types to run:
+  - ✅ **Tone of Voice Analysis** - Formality, warmth, authority analysis
+  - ✅ **Message Clarity** - Communication effectiveness scoring  
+  - ✅ **Brand Archetypes** - 12 core archetypes identification
+- **NEW: Export Functionality** - Generate comprehensive Markdown reports with analysis results
+- **NEW: Draggable Interface** - Panel can be moved around the screen by dragging the header
+- **NEW: Minimize/Maximize** - Collapsible panel for better user experience
+
+### 🔧 Core Infrastructure Fixes
+- **FIXED: showPanel Message Handler** - Panel now actually creates and displays when requested
+- **FIXED: Content Controller Integration** - Enhanced controller with proper panel support
+- **FIXED: Checkbox Logic** - Analysis types properly control which prompts get executed
+- **ENHANCED: Error Handling** - Better user feedback for analysis failures and loading states
+
+### 🎨 Professional UI Design
+- **XCLV Branded Design** - Blue gradients and professional color scheme
+- **Modern CSS Animations** - Smooth transitions and hover effects
+- **Responsive Layout** - Panel adapts to different screen sizes and viewport constraints
+- **Loading States** - Visual feedback during analysis with spinner animations
+- **Results Organization** - Clean sections for each analysis type with scores and recommendations
+
+### 🛡️ Enhanced User Experience
+- **Settings Persistence** - Checkbox states remembered between sessions
+- **Clear Results** - Users can clear analysis data and start fresh
+- **Live Status Updates** - Real-time feedback in panel footer
+- **Error Recovery** - Graceful handling of analysis failures with user-friendly messages
+
+### 🔧 Technical Improvements
+- **Version Increment** - Updated to 1.2.8 in manifest.json
+- **Better Message Passing** - Improved communication between popup and content scripts
+- **Panel Positioning** - Smart positioning to keep panel within viewport bounds
+- **Memory Management** - Proper cleanup of panel elements and event listeners
+
+### 🧪 Testing Requirements
+- Test floating panel creation and display functionality
+- Verify checkbox selection affects which analysis types run
+- Test draggable interface and minimize/maximize functionality
+- Confirm export functionality generates proper Markdown reports
+- Validate panel positioning stays within viewport bounds
+- Check error handling for various failure scenarios
+
+---
+
 ## [1.2.7] - 2025-08-11
 
 ### 🔧 Critical UI Fixes
@@ -199,12 +246,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor (1.X.0)**: New features, significant improvements, new prompt systems
 - **Patch (1.2.X)**: Bug fixes, minor improvements, stability updates
 
-### UI/UX Guidelines (NEW in v1.2.7)
+### UI/UX Guidelines (Updated in v1.2.8)
 1. **CSS Organization**: All styles in popup.css with CSS variables for consistency
 2. **Professional Design**: XCLV brand colors, gradients, and smooth animations
 3. **Responsive Layout**: Mobile-friendly with proper spacing and typography
 4. **Accessibility**: High contrast support, reduced motion, proper focus states
 5. **User Feedback**: Clear loading states, notifications, and error messages
+6. **Panel Design**: Floating panels should be draggable, minimizable, and professional
 
 ### Code Quality Standards
 1. **JavaScript Validation**: All code must pass ESLint without errors
@@ -213,37 +261,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 4. **User Feedback**: Clear success/error messages for all operations
 5. **Testing**: Manual testing required for all popup functionality
 6. **UI Testing**: Verify visual appearance and responsive behavior
+7. **Panel Testing**: Test draggable, minimizable, and export functionality
 
-### Pre-Release Checklist
-- [ ] Test popup.css loads correctly and UI appears professional
-- [ ] Verify Show Analysis Panel button creates and displays panel
-- [ ] Check that excluded settings (Real-time, Live Scoreboard) are removed
-- [ ] Test API key saving and validation
-- [ ] Verify all button functionality works correctly
+### Pre-Release Checklist (Updated for v1.2.8)
+- [ ] Test floating panel creation and display
+- [ ] Verify analysis type checkboxes control prompt execution
+- [ ] Test draggable interface and positioning
+- [ ] Check minimize/maximize functionality
+- [ ] Test export functionality generates proper reports
+- [ ] Verify error handling and loading states
+- [ ] Test on different screen sizes and resolutions
 - [ ] Check JavaScript console for errors
 - [ ] Test settings persistence between sessions
 - [ ] Validate background service communication
-- [ ] Test responsive design on different screen sizes
 - [ ] Update version number in manifest.json
 - [ ] Update README.md with changes
 - [ ] Update CHANGELOG.md with new version
 
 ### Critical Files to Monitor
-- `popup.css` - Complete styling system (NEW in v1.2.7)
+- `popup.css` - Complete styling system
 - `popup.html` - Streamlined UI structure
 - `popup.js` - Main popup controller (frequent syntax issues)
 - `manifest.json` - Version and permissions
 - `background.js` - API service and message handling
-- `content.js` - Page interaction and analysis
+- `content.js` - Page interaction and analysis (NOW includes floating panel)
 - `prompts/*.md` - Analysis prompt definitions
 
-### UI Development Best Practices (NEW in v1.2.7)
-1. **CSS Variables**: Use custom properties for consistent theming
-2. **Animation**: Smooth transitions with reduced motion support
-3. **Typography**: System fonts with proper hierarchy and spacing
-4. **Color System**: Professional brand palette with accessibility compliance
-5. **Component Design**: Modular CSS classes for reusable components
-6. **Mobile First**: Responsive design starting from mobile breakpoints
+### Panel Development Best Practices (NEW in v1.2.8)
+1. **Draggable Design**: Use proper mouse event handling for smooth dragging
+2. **Viewport Constraints**: Keep panels within visible screen bounds
+3. **State Management**: Remember panel position and minimize state
+4. **Professional Styling**: Consistent with XCLV brand guidelines
+5. **Export Features**: Generate useful, formatted reports for users
+6. **Error Handling**: Graceful degradation when analysis fails
 
 ---
 
@@ -251,6 +301,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Major Features | Bug Fixes | Breaking Changes | UI Updates |
 |---------|-------------|----------------|-----------|------------------|------------|
+| 1.2.8   | 2025-08-11  | 1              | 4         | 0                | 1          |
 | 1.2.7   | 2025-08-11  | 0              | 4         | 0                | 1          |
 | 1.2.6   | 2025-08-11  | 0              | 3         | 0                | 0          |
 | 1.2.5   | 2025-08-11  | 1              | 3         | 0                | 0          |
@@ -275,6 +326,7 @@ When contributing to this project:
 5. **Include clear commit messages** describing the changes
 6. **Test UI thoroughly** when making CSS or popup changes
 7. **Verify responsive behavior** on different screen sizes
+8. **Test floating panel functionality** if making content script changes
 
 ### Commit Message Format
 - `🔧 Fix:` Bug fixes and stability improvements
@@ -284,14 +336,16 @@ When contributing to this project:
 - `🎨 Style:` UI/UX improvements and CSS changes
 - `⚡ Performance:` Performance optimizations
 - `📋 Prompts:` Prompt system changes and additions
+- `🎯 Panel:` Floating panel improvements and features
 
-### UI Development Guidelines (NEW in v1.2.7)
+### UI Development Guidelines (Updated for v1.2.8)
 - Use CSS variables for consistent theming
 - Test on multiple screen sizes (320px to 1920px)
 - Ensure accessibility compliance (WCAG 2.1 AA)
 - Implement proper loading states for all interactions
 - Use semantic HTML with proper ARIA labels
 - Test with high contrast and reduced motion preferences
+- Design draggable interfaces with proper UX feedback
 
 ---
 
