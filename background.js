@@ -1,5 +1,6 @@
 // XCLV Brand Analysis - Enhanced Background Service with Robust API Handling
 // Fixed "Invalid candidate structure" error and improved response parsing
+// KEEPING GEMINI 2.5 MODEL AS IT WAS WORKING
 
 class PromptManager {
   constructor() {
@@ -193,7 +194,7 @@ Return ONLY valid JSON.`
 class BrandAnalysisService {
   constructor() {
     this.apiKey = null;
-    this.selectedModel = 'gemini-1.5-flash';
+    this.selectedModel = 'gemini-2.5-flash'; // KEEPING THE WORKING MODEL
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
     this.isInitialized = false;
     this.promptManager = new PromptManager();
@@ -203,7 +204,7 @@ class BrandAnalysisService {
     try {
       const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
       this.apiKey = result.geminiApiKey;
-      this.selectedModel = result.selectedModel || 'gemini-1.5-flash';
+      this.selectedModel = result.selectedModel || 'gemini-2.5-flash'; // KEEPING DEFAULT AS 2.5
       
       // Initialize prompt manager
       await this.promptManager.initialize();
