@@ -1,5 +1,5 @@
 // XCLV Brand Analysis - Popup Script
-// Extension Control Interface with Gemini API Management
+// Extension Control Interface with Gemini 2.5 API Management
 
 class PopupController {
   constructor() {
@@ -13,7 +13,7 @@ class PopupController {
     };
     this.apiConfiguration = {
       geminiApiKey: '',
-      selectedModel: 'gemini-1.5-flash',
+      selectedModel: 'gemini-2.5-flash',
       isConfigured: false
     };
   }
@@ -43,7 +43,7 @@ class PopupController {
       const result = await chrome.storage.sync.get(['geminiApiKey', 'selectedModel']);
       this.apiConfiguration = {
         geminiApiKey: result.geminiApiKey || '',
-        selectedModel: result.selectedModel || 'gemini-1.5-flash',
+        selectedModel: result.selectedModel || 'gemini-2.5-flash',
         isConfigured: !!(result.geminiApiKey && result.geminiApiKey.length > 10)
       };
     } catch (error) {
@@ -222,13 +222,12 @@ class PopupController {
     if (!modelInfo) return;
 
     const modelDescriptions = {
-      'gemini-1.5-flash': 'Fast and cost-effective for brand analysis',
-      'gemini-1.5-flash-8b': 'Ultra-fast with lower cost per request',
-      'gemini-1.5-pro': 'Advanced reasoning for complex analysis',
-      'gemini-1.0-pro': 'Stable and reliable for consistent results'
+      'gemini-2.5-flash': 'Latest AI model with enhanced reasoning and speed',
+      'gemini-2.5-flash-lite': 'Ultra-fast processing with optimized performance',
+      'gemini-2.5-pro': 'Most advanced model with superior analytical capabilities'
     };
 
-    modelInfo.textContent = modelDescriptions[this.apiConfiguration.selectedModel] || 'Advanced AI model';
+    modelInfo.textContent = modelDescriptions[this.apiConfiguration.selectedModel] || 'Advanced Gemini 2.5 AI model';
   }
 
   updateCostEstimate() {
@@ -236,13 +235,12 @@ class PopupController {
     if (!costEstimate) return;
 
     const costEstimates = {
-      'gemini-1.5-flash': '$0.01-0.03 per analysis',
-      'gemini-1.5-flash-8b': '$0.005-0.015 per analysis',
-      'gemini-1.5-pro': '$0.05-0.15 per analysis',
-      'gemini-1.0-pro': '$0.02-0.06 per analysis'
+      'gemini-2.5-flash': '$0.005-0.015 per analysis',
+      'gemini-2.5-flash-lite': '$0.003-0.010 per analysis',
+      'gemini-2.5-pro': '$0.015-0.050 per analysis'
     };
 
-    costEstimate.textContent = `Estimated cost: ${costEstimates[this.apiConfiguration.selectedModel] || '$0.01-0.05 per analysis'}`;
+    costEstimate.textContent = `Estimated cost: ${costEstimates[this.apiConfiguration.selectedModel] || '$0.005-0.02 per analysis'}`;
   }
 
   async saveAPISettings() {
@@ -277,7 +275,7 @@ class PopupController {
       // Save current settings first
       await this.saveAPIConfiguration();
 
-      // Test the API connection
+      // Test the API connection with Gemini 2.5
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.apiConfiguration.selectedModel}:generateContent?key=${this.apiConfiguration.geminiApiKey}`, {
         method: 'POST',
         headers: {
@@ -286,9 +284,13 @@ class PopupController {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: 'Hello, respond with just "API connection successful"'
+              text: 'Hello, respond with just "Gemini 2.5 API connection successful"'
             }]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 50
+          }
         })
       });
 
@@ -296,8 +298,8 @@ class PopupController {
         const data = await response.json();
         if (data.candidates && data.candidates[0]) {
           this.apiConfiguration.isConfigured = true;
-          this.showValidation('API connection successful!', 'success');
-          this.showNotification('Gemini API connected successfully');
+          this.showValidation('Gemini 2.5 API connection successful!', 'success');
+          this.showNotification('Gemini 2.5 API connected successfully');
           this.updateAPIStatus();
         } else {
           throw new Error('Invalid API response format');
@@ -336,15 +338,25 @@ class PopupController {
 
     if (this.apiConfiguration.isConfigured) {
       apiSetup.classList.add('configured');
-      apiStatusText.textContent = `Gemini API configured (${this.apiConfiguration.selectedModel})`;
+      const modelDisplayName = this.getModelDisplayName(this.apiConfiguration.selectedModel);
+      apiStatusText.textContent = `Gemini 2.5 API configured (${modelDisplayName})`;
       analyzeBtn.disabled = false;
       analyzeBtn.textContent = this.isAnalysisActive ? 'Stop Analysis' : 'Start Brand Analysis';
     } else {
       apiSetup.classList.remove('configured');
-      apiStatusText.textContent = 'Configure Gemini API to enable brand analysis';
+      apiStatusText.textContent = 'Configure Gemini 2.5 API to enable brand analysis';
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = 'Configure API First';
     }
+  }
+
+  getModelDisplayName(modelId) {
+    const modelNames = {
+      'gemini-2.5-flash': 'Flash',
+      'gemini-2.5-flash-lite': 'Flash-Lite',
+      'gemini-2.5-pro': 'Pro'
+    };
+    return modelNames[modelId] || modelId;
   }
 
   populateAPIForm() {
@@ -422,7 +434,7 @@ class PopupController {
       }
 
       if (analysisTime) {
-        analysisTime.textContent = '< 2s';
+        analysisTime.textContent = '< 1s';
       }
     } else {
       // Show placeholders
@@ -457,7 +469,7 @@ class PopupController {
 
   async toggleAnalysis() {
     if (!this.apiConfiguration.isConfigured) {
-      this.showNotification('Please configure Gemini API first', 'error');
+      this.showNotification('Please configure Gemini 2.5 API first', 'error');
       return;
     }
 
@@ -485,9 +497,9 @@ class PopupController {
         // Get analysis results
         setTimeout(async () => {
           await this.refreshAnalysisData();
-        }, 3000);
+        }, 2000);
         
-        this.showNotification('Brand analysis started');
+        this.showNotification('Brand analysis started with Gemini 2.5');
       }
     } catch (error) {
       console.error('Analysis toggle failed:', error);
@@ -530,6 +542,7 @@ class PopupController {
         timestamp: new Date().toISOString(),
         domain: this.currentTab?.url ? new URL(this.currentTab.url).hostname : 'unknown',
         model: this.apiConfiguration.selectedModel,
+        modelVersion: 'Gemini 2.5',
         analysis: this.analysisData,
         summary: {
           overallScore: this.calculateOverallScore(this.analysisData),
@@ -543,7 +556,7 @@ class PopupController {
       const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
-      const filename = `xclv-brand-analysis-${Date.now()}.json`;
+      const filename = `xclv-brand-analysis-gemini25-${Date.now()}.json`;
       
       // Use Chrome downloads API
       chrome.downloads.download({
