@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "XCLV Brand Analysis",
   "version": "1.0.0",
-  "description": "Strategic brand intelligence for real-time analysis of tone, archetypes, and message clarity. Transform any webpage into brand insights.",
+  "description": "Strategic brand intelligence powered by Google Gemini. Real-time analysis of tone, archetypes, and message clarity for any webpage.",
   
   "author": "XCLV Brand Intelligence",
   "homepage_url": "https://xclv.ai",
@@ -16,7 +16,7 @@
   
   "action": {
     "default_popup": "popup.html",
-    "default_title": "XCLV Brand Analysis",
+    "default_title": "XCLV Brand Analysis - Powered by Gemini",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
@@ -49,7 +49,8 @@
   ],
   
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "https://generativelanguage.googleapis.com/*"
   ],
   
   "optional_permissions": [
@@ -94,13 +95,13 @@
   "options_page": "options.html",
   
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.anthropic.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://generativelanguage.googleapis.com;"
   },
   
   "minimum_chrome_version": "88",
   
   "externally_connectable": {
-    "matches": ["https://xclv.ai/*"]
+    "matches": ["https://xclv.ai/*", "https://aistudio.google.com/*"]
   },
   
   "short_name": "XCLV Analysis",
