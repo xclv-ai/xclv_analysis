@@ -14,6 +14,16 @@ Transform your brand analysis workflow with real-time insights into tone of voic
 - **Message Clarity Scoring**: Real-time assessment of communication effectiveness
 - **Cultural Alignment**: Understand how brand positioning fits current market trends
 
+### 🎯 NEW: Interactive Mouseover Analysis (v1.2.0)
+- **Smart Text Detection**: Hover over any text element to see animated analysis frames
+- **One-Click Analysis**: Click "Analyze Content" button for instant brand intelligence
+- **Debug Popup**: Comprehensive debugging interface showing:
+  - Parsed content sent to Gemini
+  - Complete system prompts
+  - Raw LLM outputs and responses
+  - Element context and styling data
+- **Real-Time Insights**: Get immediate clarity scores and brand recommendations
+
 ### Smart Content Intelligence
 - **Hover Insights**: Get instant clarity scores on any text element
 - **Live Scoreboard**: Monitor brand performance metrics in real-time
@@ -63,17 +73,32 @@ node verify-extension.js
 3. **Click "Start Brand Analysis"** to begin real-time analysis
 4. **View results** in the floating analysis panel
 
+### 🆕 Interactive Mouseover Analysis
+
+1. **Enable Interactive Mode** in the popup interface
+2. **Hover over any text element** on the page
+3. **See animated frames** highlighting analyzable content
+4. **Click "Analyze Content"** button to get detailed insights
+5. **View debug popup** with:
+   - Complete extracted text and context
+   - System prompt sent to Gemini
+   - Full LLM analysis output
+   - Raw API response data
+
 ### Advanced Features
 
 - **Hover Analysis**: Enable "Hover Insights" to get instant text clarity scores
 - **Live Metrics**: Toggle "Live Scoreboard" for continuous brand monitoring
 - **Export Data**: Click "Export Report" to save analysis as JSON
+- **Debug Console**: Open advanced debugging tools for development
 
 ### Keyboard Shortcuts
 
-- `Alt + A`: Toggle brand analysis
-- `Alt + P`: Show/hide analysis panel
-- `Alt + E`: Export current report
+- `Ctrl+Shift+B` / `Cmd+Shift+B`: Toggle brand analysis
+- `Ctrl+Shift+P` / `Cmd+Shift+P`: Show/hide analysis panel
+- `Ctrl+Shift+I` / `Cmd+Shift+I`: Toggle interactive mouseover mode
+- `Ctrl+Shift+D` / `Cmd+Shift+D`: Open debug console
+- `Ctrl+Shift+E` / `Cmd+Shift+E`: Export current report
 - `Escape`: Close popup
 
 ## 🛠 Configuration
@@ -95,6 +120,20 @@ Access advanced settings through:
 - **Options Page**: Detailed configuration and preferences
 - **Right-click Extension**: Quick access to settings
 
+## 🔧 Interactive Analysis Features
+
+### Smart Content Detection
+- **Automatic Element Recognition**: Detects paragraphs, headings, buttons, and links
+- **Context-Aware Analysis**: Considers element positioning, styling, and semantic meaning
+- **Performance Optimization**: Intelligent caching and queue management
+- **Visual Feedback**: Animated frames and smooth transitions
+
+### Debug Interface
+- **Multi-Tab Debugging**: Separate tabs for content, prompts, outputs, and raw data
+- **Syntax Highlighting**: JSON formatting with color coding
+- **Real-Time Updates**: Live analysis progress tracking
+- **Export Capabilities**: Save debug data for further analysis
+
 ## 🔧 Troubleshooting
 
 ### Common Issues
@@ -109,17 +148,26 @@ Access advanced settings through:
 - Check API quota and billing status
 - Test API connection using the "TEST" button
 
+**Interactive mode not working:**
+- Ensure Interactive Mode is enabled in popup
+- Check browser console for JavaScript errors
+- Try refreshing the page after enabling
+- Verify content script is loaded properly
+
 **Content not being analyzed:**
-- Ensure page has sufficient text content (50+ characters)
+- Ensure page has sufficient text content (20+ characters per element)
 - Check that content isn't hidden behind overlays/modals
 - Try on a different page with clear brand messaging
+- Use debug console to test analysis functions
 
 ### Debug Mode
 
 For advanced debugging, use the debug console:
 ```javascript
-// Paste into browser console on any page
-// Copy content from debug-console.js
+// Open browser console (F12) and use:
+xclvDebugConsole.extractContent();  // Extract page content
+xclvDebugConsole.getAnalysisData();  // Get current analysis
+xclvDebugConsole.testAnalysis('test text');  // Test analysis function
 ```
 
 ## 🏗 Architecture
@@ -128,7 +176,7 @@ For advanced debugging, use the debug console:
 
 ```
 xclv_analysis/
-├── manifest.json          # Extension configuration
+├── manifest.json          # Extension configuration (v1.2.0)
 ├── background.js          # AI services and background logic
 ├── content.js            # Page interaction and analysis UI
 ├── popup.html/js         # Extension popup interface
@@ -139,11 +187,13 @@ xclv_analysis/
 
 ### Key Classes
 
+- **InteractiveContentAnalyzer**: NEW - Handles mouseover analysis and debug popup
 - **BrandAnalysisService**: Core AI-powered analysis engine
 - **ToneAnalysisEngine**: Sophisticated tone detection algorithms
 - **ArchetypeAnalyzer**: Brand personality identification
 - **WebContentExtractor**: Smart content extraction with noise filtering
 - **BrandAnalysisUI**: Real-time analysis interface
+- **XCLVPopupController**: Enhanced popup with interactive controls
 
 ## 📊 Output Format
 
@@ -178,7 +228,34 @@ xclv_analysis/
     "url": "https://example.com",
     "timestamp": "2025-08-11T09:53:43Z",
     "model": "gemini-2.5-flash",
-    "version": "2.5"
+    "version": "1.2.0"
+  }
+}
+```
+
+### Interactive Analysis Output
+
+```json
+{
+  "clarityScore": 85,
+  "comprehensionLevel": "immediate",
+  "emotionalResonance": 78,
+  "actionPotential": "high",
+  "brandAlignment": {
+    "tone": "confident and approachable",
+    "archetype": "Hero",
+    "consistency": 92
+  },
+  "quickInsights": [
+    {
+      "type": "positive",
+      "message": "Clear call-to-action with strong emotional appeal"
+    }
+  ],
+  "textQuality": {
+    "readability": 88,
+    "engagement": 91,
+    "memorability": 76
   }
 }
 ```
@@ -191,6 +268,7 @@ This extension embodies the **LiveBranding methodology**:
 - **Cultural Context**: Real-time assessment of market relevance
 - **Adaptive Intelligence**: AI that learns from brand evolution patterns
 - **Actionable Insights**: Strategic recommendations for brand development
+- **Interactive Debugging**: Deep visibility into AI decision-making processes
 
 ### Strategic Applications
 
@@ -198,6 +276,7 @@ This extension embodies the **LiveBranding methodology**:
 - **Competitive Intelligence**: Real-time monitoring of market positioning
 - **Content Optimization**: Improve messaging clarity and effectiveness
 - **Cultural Alignment**: Ensure brand relevance in changing markets
+- **Team Training**: Use debug features to understand brand analysis methodology
 
 ## 🤝 Contributing
 
@@ -214,6 +293,7 @@ We welcome contributions that advance the LiveBranding revolution:
 - Real-time competitive analysis features
 - Cultural trend integration
 - Multi-language brand analysis support
+- Advanced debugging and visualization tools
 
 ## 📄 License
 
@@ -234,19 +314,47 @@ MIT License - See [LICENSE](LICENSE) for details.
 - [x] Real-time content scoring
 - [x] Gemini 2.5 integration
 
-### Phase 2: Advanced Intelligence (🚧 In Progress)
+### Phase 2: Interactive Intelligence (✅ v1.2.0)
+- [x] Mouseover content analysis
+- [x] Debug popup interface
+- [x] Real-time element highlighting
+- [x] Advanced debugging tools
+- [x] Interactive mode controls
+
+### Phase 3: Advanced Intelligence (🚧 In Progress)
 - [ ] Competitive analysis dashboard
 - [ ] Cultural trend integration
 - [ ] Multi-page brand consistency analysis
 - [ ] Historical brand evolution tracking
-
-### Phase 3: Strategic Platform (📋 Planned)
 - [ ] Team collaboration features
+
+### Phase 4: Strategic Platform (📋 Planned)
 - [ ] Brand guideline generation
 - [ ] Performance analytics integration
 - [ ] API for external brand tools
+- [ ] Enterprise team management
 
 ---
+
+## 🆕 What's New in v1.2.0
+
+### Interactive Mouseover Analysis
+- **Smart Element Detection**: Automatically identifies analyzable text elements
+- **Animated Visual Feedback**: Beautiful CSS animations and transitions
+- **One-Click Analysis**: Instant brand intelligence with single button click
+- **Comprehensive Debug Popup**: Multi-tab interface showing complete analysis pipeline
+
+### Enhanced Debugging
+- **Real-Time Content Parsing**: See exactly what content is sent to Gemini
+- **System Prompt Visibility**: Full transparency into AI instructions
+- **Raw Response Inspection**: Complete API responses with error handling
+- **Context Analysis**: Detailed element positioning and styling data
+
+### Performance Improvements
+- **Intelligent Caching**: Avoid redundant API calls for same content
+- **Queue Management**: Optimized analysis processing
+- **Memory Optimization**: Efficient resource usage
+- **Error Recovery**: Robust error handling and user feedback
 
 **Transform your brand analysis workflow. Start building adaptive brand intelligence today.** 🚀
 
