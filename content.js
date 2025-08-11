@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.18
+// Click-to-Analyze Interactive Mode v1.2.19
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.18...');
+  console.log('XCLV: Content script loading v1.2.19...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -477,8 +477,9 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         isAnalyzing: this.isAnalyzing
       });
 
-      // Handle analyze button clicks
-      if (event.target.classList?.contains('xclv-analyze-btn-inline')) {
+      // Handle analyze button clicks - FIXED: Better button detection
+      if (event.target.classList?.contains('xclv-analyze-btn-inline') || 
+          event.target.closest('.xclv-analyze-btn-inline')) {
         console.log('XCLV: Analyze button clicked!');
         event.preventDefault();
         event.stopPropagation();
@@ -562,13 +563,36 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       console.log('XCLV: Element deselected');
     }
 
+    // FIXED: Better element checking to prevent TypeError
     isXCLVElement(element) {
-      return element.closest('#xclv-analysis-panel') ||
-             element.closest('.xclv-analyze-btn-inline') ||
-             element.closest('.xclv-analysis-overlay') ||
-             element.classList?.contains('xclv-highlighted') ||
-             element.classList?.contains('xclv-selected') ||
-             element.id?.startsWith('xclv-');
+      try {
+        // Check for null/undefined element
+        if (!element) return false;
+        
+        // Check closest selectors
+        if (element.closest('#xclv-analysis-panel') ||
+            element.closest('.xclv-analyze-btn-inline') ||
+            element.closest('.xclv-analysis-overlay')) {
+          return true;
+        }
+        
+        // Check classList existence before using contains
+        if (element.classList && (
+            element.classList.contains('xclv-highlighted') ||
+            element.classList.contains('xclv-selected'))) {
+          return true;
+        }
+        
+        // Safe check for element.id and startsWith
+        if (element.id && typeof element.id === 'string' && element.id.startsWith('xclv-')) {
+          return true;
+        }
+        
+        return false;
+      } catch (error) {
+        console.warn('XCLV: Error in isXCLVElement:', error);
+        return false; // Default to not being an XCLV element if error occurs
+      }
     }
 
     isAnalyzableElement(element) {
@@ -646,6 +670,14 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       this.analyzeButton.className = 'xclv-analyze-btn-inline xclv-btn-selected';
       this.analyzeButton.innerHTML = '🔍 ANALYZE CONTENT';
       this.analyzeButton.title = 'Click to analyze this selected text element';
+      
+      // FIXED: Add explicit click event listener to button
+      this.analyzeButton.addEventListener('click', (e) => {
+        console.log('XCLV: Button click event fired directly!');
+        e.preventDefault();
+        e.stopPropagation();
+        this.analyzeElement(this.selectedElement);
+      });
       
       // Position the button next to the element - FIXED POSITIONING
       this.analyzeButton.style.position = 'fixed';
@@ -1015,7 +1047,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.18');
+      console.log('XCLV: Content Controller created v1.2.19');
     }
 
     initialize() {
@@ -1216,7 +1248,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.18');
+    console.log('XCLV: Content Controller initialized successfully v1.2.19');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1276,6 +1308,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.18 loaded successfully');
+console.log('XCLV: Content script v1.2.19 loaded successfully');
 
 } // End of duplicate loading check
