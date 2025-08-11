@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "XCLV Brand Analysis",
-  "version": "1.2.14",
-  "description": "Strategic brand intelligence powered by Google Gemini. Complete floating analysis panel with interactive mouseover analysis for any text element on webpages. ToV, Message Clarity, and Brand Archetypes analysis.",
+  "version": "1.2.15",
+  "description": "Strategic brand intelligence powered by Google Gemini. Complete floating analysis panel with click-to-analyze interactive mode for any text element on webpages. ToV, Message Clarity, and Brand Archetypes analysis.",
   
   "author": "XCLV Brand Intelligence",
   "homepage_url": "https://xclv.ai",
@@ -90,7 +90,7 @@
         "default": "Ctrl+Shift+I",
         "mac": "Command+Shift+I"
       },
-      "description": "Toggle interactive mouseover analysis mode"
+      "description": "Toggle interactive click-to-analyze mode"
     },
     "export-report": {
       "suggested_key": {
