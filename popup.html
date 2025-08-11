@@ -11,7 +11,7 @@
 
     body {
       width: 380px;
-      height: 600px;
+      height: 640px;
       background: linear-gradient(145deg, #0f0f23, #1a1a2e);
       color: #ffffff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -247,6 +247,21 @@
 
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-interactive {
+      background: linear-gradient(45deg, #ff6b35, #f7931e);
+      color: #000;
+    }
+
+    .btn-interactive:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+    }
+
+    .btn-interactive.active {
+      background: linear-gradient(45deg, #f7931e, #ff6b35);
+      box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
     }
 
     .btn:disabled {
@@ -489,6 +504,23 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
+    .interactive-mode-info {
+      background: rgba(255, 107, 53, 0.1);
+      border: 1px solid rgba(255, 107, 53, 0.2);
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      color: #ff9a73;
+      text-align: center;
+    }
+
+    .interactive-mode-info.active {
+      background: rgba(255, 107, 53, 0.2);
+      border-color: rgba(255, 107, 53, 0.4);
+      color: #ffb899;
+    }
   </style>
 </head>
 <body>
@@ -580,10 +612,18 @@
       <div class="archetype-badge" id="primaryArchetype">Unknown</div>
     </div>
 
+    <!-- Interactive Mode Info -->
+    <div class="interactive-mode-info hidden" id="interactiveModeInfo">
+      🔍 Hover over text blocks and click "Analyze Content" to get detailed insights
+    </div>
+
     <!-- Action Buttons -->
     <div class="action-buttons">
       <button class="btn btn-primary" id="analyzeBtn" disabled>
         Configure API First
+      </button>
+      <button class="btn btn-interactive" id="interactiveModeBtn">
+        🎯 Enable Interactive Mode
       </button>
       <button class="btn btn-secondary" id="togglePanelBtn">
         Show Analysis Panel
