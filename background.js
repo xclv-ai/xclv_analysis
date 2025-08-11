@@ -1,11 +1,11 @@
 // XCLV Brand Analysis - Background Script
-// Strategic Brand Intelligence Engine
+// Strategic Brand Intelligence Engine with Gemini API
 
 class AIServiceBase {
   constructor(serviceName, systemPrompt) {
     this.serviceName = serviceName;
     this.systemPrompt = systemPrompt;
-    this.apiEndpoint = 'https://api.anthropic.com/v1/messages';
+    this.apiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
     this.maxRetries = 3;
     this.retryDelay = 1000;
   }
@@ -13,7 +13,7 @@ class AIServiceBase {
   async executeAIOperation(data, promptBuilder, responseParser) {
     try {
       const prompt = promptBuilder(data);
-      const response = await this.callAnthropicAPI(prompt);
+      const response = await this.callGeminiAPI(prompt);
       return responseParser(response);
     } catch (error) {
       console.error(`${this.serviceName} operation failed:`, error);
@@ -21,38 +21,88 @@ class AIServiceBase {
     }
   }
 
-  async callAnthropicAPI(userPrompt, retryCount = 0) {
+  async callGeminiAPI(userPrompt, retryCount = 0) {
     try {
-      const response = await fetch(this.apiEndpoint, {
+      // Get API key and model from storage
+      const { geminiApiKey, selectedModel } = await this.getAPISettings();
+      
+      if (!geminiApiKey) {
+        throw new Error('Gemini API key not configured. Please set it in the extension popup.');
+      }
+
+      const model = selectedModel || 'gemini-1.5-flash';
+      const fullPrompt = `${this.systemPrompt}\n\nUser Request: ${userPrompt}`;
+
+      const response = await fetch(`${this.apiEndpoint}/${model}:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
-          max_tokens: 2000,
-          system: this.systemPrompt,
-          messages: [{
-            role: 'user',
-            content: userPrompt
-          }]
+          contents: [{
+            parts: [{
+              text: fullPrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         })
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
       }
 
       const data = await response.json();
-      return data.content[0];
+      
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        throw new Error('Invalid response format from Gemini API');
+      }
+
+      return {
+        content: data.candidates[0].content.parts[0].text
+      };
     } catch (error) {
-      if (retryCount < this.maxRetries) {
+      if (retryCount < this.maxRetries && !error.message.includes('API key')) {
         await this.delay(this.retryDelay * (retryCount + 1));
-        return this.callAnthropicAPI(userPrompt, retryCount + 1);
+        return this.callGeminiAPI(userPrompt, retryCount + 1);
       }
       throw error;
     }
+  }
+
+  async getAPISettings() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(['geminiApiKey', 'selectedModel'], (result) => {
+        resolve({
+          geminiApiKey: result.geminiApiKey || '',
+          selectedModel: result.selectedModel || 'gemini-1.5-flash'
+        });
+      });
+    });
   }
 
   delay(ms) {
@@ -118,7 +168,14 @@ Return JSON with this exact structure:
     try {
       // Clean response and extract JSON
       const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleanedResponse);
+      const parsed = JSON.parse(cleanedResponse);
+      
+      // Validate structure
+      if (!parsed.scores || !parsed.dominantTone) {
+        throw new Error('Invalid response structure');
+      }
+      
+      return parsed;
     } catch (error) {
       console.error('Failed to parse tone analysis:', error);
       return this.getDefaultToneAnalysis();
@@ -181,7 +238,14 @@ Return JSON:
   parseArchetypeAnalysis(responseText) {
     try {
       const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleanedResponse);
+      const parsed = JSON.parse(cleanedResponse);
+      
+      // Validate structure
+      if (!parsed.primaryArchetype || !parsed.primaryArchetype.name) {
+        throw new Error('Invalid response structure');
+      }
+      
+      return parsed;
     } catch (error) {
       console.error('Failed to parse archetype analysis:', error);
       return this.getDefaultArchetypeAnalysis();
@@ -230,7 +294,14 @@ Return JSON:
   parseClarityAnalysis(responseText) {
     try {
       const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleanedResponse);
+      const parsed = JSON.parse(cleanedResponse);
+      
+      // Validate structure
+      if (typeof parsed.clarityScore !== 'number') {
+        throw new Error('Invalid response structure');
+      }
+      
+      return parsed;
     } catch (error) {
       console.error('Failed to parse clarity analysis:', error);
       return this.getDefaultClarityAnalysis();
@@ -514,6 +585,7 @@ class ToneAnalysisEngine {
   }
 }
 
+// Keep the existing ArchetypeAnalyzer class (unchanged)
 class ArchetypeAnalyzer {
   constructor() {
     this.archetypes = {
