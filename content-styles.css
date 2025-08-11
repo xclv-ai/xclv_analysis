@@ -13,6 +13,21 @@
   outline-offset: 2px !important;
 }
 
+/* NEW: Selected Element Styling - Different from hover */
+.xclv-selected {
+  filter: none !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+  background: rgba(0, 255, 136, 0.1) !important;
+  border-radius: 4px !important;
+  outline: 3px solid rgba(0, 255, 136, 0.6) !important;
+  outline-offset: 3px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 136, 0.3),
+    inset 0 0 10px rgba(0, 255, 136, 0.1) !important;
+  z-index: 1000 !important;
+}
+
 /* Analyze Button - CRITICAL FOR INTERACTIVE MODE */
 .xclv-analyze-btn-inline {
   position: fixed !important;
@@ -38,12 +53,31 @@
   animation: xclvBtnSlideIn 0.2s ease-out !important;
 }
 
+/* NEW: Enhanced styling for selected button */
+.xclv-analyze-btn-inline.xclv-btn-selected {
+  background: linear-gradient(145deg, #00ff88, #00ccaa) !important;
+  box-shadow: 
+    0 6px 20px rgba(0, 255, 136, 0.4),
+    0 0 25px rgba(0, 255, 136, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  border: 2px solid rgba(0, 255, 136, 0.8) !important;
+  transform: scale(1.02) !important;
+}
+
 .xclv-analyze-btn-inline:hover {
   transform: translateY(-2px) scale(1.05) !important;
   box-shadow: 
     0 6px 20px rgba(0, 255, 136, 0.4),
     0 4px 12px rgba(0, 0, 0, 0.3) !important;
   background: linear-gradient(145deg, #00ffaa, #00ff88) !important;
+}
+
+.xclv-analyze-btn-inline.xclv-btn-selected:hover {
+  transform: translateY(-2px) scale(1.07) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 255, 136, 0.5),
+    0 0 30px rgba(0, 255, 136, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
 .xclv-analyze-btn-inline:active {
@@ -302,17 +336,13 @@
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
 }
 
 .xclv-brand-icon {
   font-size: 18px !important;
-}
-
-.xclv-panel-title {
-  margin: 0 !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #ffffff !important;
 }
 
 .xclv-panel-controls {
