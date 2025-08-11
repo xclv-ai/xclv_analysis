@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Complete Interactive Functionality Restoration v1.2.12
+// Fixed Interactive Functionality v1.2.14
 
 console.log('XCLV: Content script loading...');
 
@@ -344,7 +344,7 @@ class AnalysisPanel {
   }
 }
 
-// Interactive Content Analyzer Class - CORE HOVER FUNCTIONALITY
+// Interactive Content Analyzer Class - ENHANCED WITH BETTER ELEMENT DETECTION
 class InteractiveContentAnalyzer {
   constructor() {
     this.isHoverMode = false;
@@ -353,6 +353,7 @@ class InteractiveContentAnalyzer {
     this.analysisOverlay = null;
     this.analysisCache = new Map();
     this.isAnalyzing = false;
+    this.debugMode = true; // Enable debug mode
     
     console.log('XCLV: InteractiveContentAnalyzer initialized');
   }
@@ -380,18 +381,29 @@ class InteractiveContentAnalyzer {
     // Remove existing listeners first
     this.removeMouseEvents();
     
-    // Add new listeners
-    document.addEventListener('mouseover', this.handleMouseOver.bind(this), true);
-    document.addEventListener('mouseout', this.handleMouseOut.bind(this), true);
-    document.addEventListener('click', this.handleClick.bind(this), true);
+    // Bind methods to preserve 'this' context
+    this.boundMouseOver = this.handleMouseOver.bind(this);
+    this.boundMouseOut = this.handleMouseOut.bind(this);
+    this.boundClick = this.handleClick.bind(this);
+    
+    // Add new listeners with proper binding
+    document.addEventListener('mouseover', this.boundMouseOver, true);
+    document.addEventListener('mouseout', this.boundMouseOut, true);
+    document.addEventListener('click', this.boundClick, true);
     
     console.log('XCLV: Mouse event listeners attached');
   }
 
   removeMouseEvents() {
-    document.removeEventListener('mouseover', this.handleMouseOver.bind(this), true);
-    document.removeEventListener('mouseout', this.handleMouseOut.bind(this), true);
-    document.removeEventListener('click', this.handleClick.bind(this), true);
+    if (this.boundMouseOver) {
+      document.removeEventListener('mouseover', this.boundMouseOver, true);
+    }
+    if (this.boundMouseOut) {
+      document.removeEventListener('mouseout', this.boundMouseOut, true);
+    }
+    if (this.boundClick) {
+      document.removeEventListener('click', this.boundClick, true);
+    }
   }
 
   handleMouseOver(event) {
@@ -402,11 +414,18 @@ class InteractiveContentAnalyzer {
     // Skip if hovering over XCLV elements
     if (this.isXCLVElement(element)) return;
     
-    // Check if element is analyzable
+    // Check if element is analyzable - ENHANCED DETECTION
     if (this.isAnalyzableElement(element)) {
       this.highlightElement(element);
       this.showAnalyzeButton(element, event);
       this.currentHoveredElement = element;
+      
+      // Debug logging
+      console.log('XCLV: Hovering over element:', {
+        tag: element.tagName,
+        text: element.textContent.trim().substring(0, 50) + '...',
+        classes: element.className
+      });
     }
   }
 
@@ -449,20 +468,43 @@ class InteractiveContentAnalyzer {
            element.id?.startsWith('xclv-');
   }
 
+  // ENHANCED ELEMENT DETECTION - Fixed to detect all text elements
   isAnalyzableElement(element) {
-    // Check tag types
-    const analyzableTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'a', 'button', 'li'];
-    if (!analyzableTags.includes(element.tagName.toLowerCase())) return false;
+    // Skip non-text elements
+    if (!element || !element.tagName) return false;
+    
+    // Check tag types - EXPANDED LIST
+    const analyzableTags = [
+      'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+      'span', 'div', 'a', 'button', 'li', 'td', 'th',
+      'label', 'strong', 'em', 'b', 'i', 'small',
+      'blockquote', 'quote', 'figcaption'
+    ];
+    
+    const tagName = element.tagName.toLowerCase();
+    if (!analyzableTags.includes(tagName)) return false;
 
     // Check text content
     const text = element.textContent?.trim();
-    if (!text || text.length < 10 || text.length > 500) return false;
+    if (!text || text.length < 5 || text.length > 1000) return false;
+
+    // Skip elements with mostly child elements (containers)
+    const childElements = element.children.length;
+    const textLength = text.length;
+    if (childElements > 3 && textLength / childElements < 10) return false;
 
     // Check visibility
     if (!this.isElementVisible(element)) return false;
 
     // Skip if already highlighted
     if (element.classList.contains('xclv-highlighted')) return false;
+
+    // Skip if it's a child of an already analyzable parent
+    let parent = element.parentElement;
+    while (parent && parent !== document.body) {
+      if (parent.classList?.contains('xclv-highlighted')) return false;
+      parent = parent.parentElement;
+    }
 
     return true;
   }
@@ -471,24 +513,23 @@ class InteractiveContentAnalyzer {
     const rect = element.getBoundingClientRect();
     const style = window.getComputedStyle(element);
     
-    return rect.width > 0 && 
-           rect.height > 0 && 
+    return rect.width > 10 && 
+           rect.height > 10 && 
            style.display !== 'none' && 
            style.visibility !== 'hidden' && 
-           style.opacity !== '0';
+           style.opacity !== '0' &&
+           rect.top < window.innerHeight &&
+           rect.bottom > 0;
   }
 
   highlightElement(element) {
     element.classList.add('xclv-highlighted');
-    element.style.filter = 'blur(1px)';
-    element.style.transition = 'filter 0.2s ease';
+    // The CSS will handle the blur and outline effects
   }
 
   removeHighlight(element) {
     if (element) {
       element.classList.remove('xclv-highlighted');
-      element.style.filter = '';
-      element.style.transition = '';
     }
   }
 
@@ -499,14 +540,23 @@ class InteractiveContentAnalyzer {
     
     this.analyzeButton = document.createElement('button');
     this.analyzeButton.className = 'xclv-analyze-btn-inline';
-    this.analyzeButton.innerHTML = '🔍 Analyze Content';
+    this.analyzeButton.innerHTML = '🔍 ANALYZE CONTENT';
     this.analyzeButton.title = 'Click to analyze this text element';
     
-    // Position the button
+    // Position the button next to the element
     this.analyzeButton.style.position = 'fixed';
-    this.analyzeButton.style.left = `${rect.left + window.scrollX}px`;
-    this.analyzeButton.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    this.analyzeButton.style.left = `${rect.left}px`;
+    this.analyzeButton.style.top = `${rect.bottom + 5}px`;
     this.analyzeButton.style.zIndex = '999999';
+    
+    // Ensure button stays in viewport
+    const buttonRect = this.analyzeButton.getBoundingClientRect();
+    if (rect.bottom + 40 > window.innerHeight) {
+      this.analyzeButton.style.top = `${rect.top - 35}px`;
+    }
+    if (rect.left + 150 > window.innerWidth) {
+      this.analyzeButton.style.left = `${window.innerWidth - 160}px`;
+    }
     
     document.body.appendChild(this.analyzeButton);
   }
@@ -524,6 +574,11 @@ class InteractiveContentAnalyzer {
     try {
       this.isAnalyzing = true;
       const text = element.textContent.trim();
+      
+      // Show debug popup if in debug mode
+      if (this.debugMode) {
+        this.showDebugPopup(element, text);
+      }
       
       // Check cache first
       if (this.analysisCache.has(text)) {
@@ -550,6 +605,79 @@ class InteractiveContentAnalyzer {
       this.showAnalysisResult(element, { error: error.message });
     } finally {
       this.isAnalyzing = false;
+    }
+  }
+
+  // NEW: Debug Popup Function - Restored functionality
+  showDebugPopup(element, text) {
+    try {
+      const debugData = {
+        element: {
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id,
+          textContent: text,
+          innerHTML: element.innerHTML.substring(0, 200) + '...'
+        },
+        context: this.getElementContext(element),
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      };
+
+      // Create debug popup window
+      const debugWindow = window.open('', 'xclv-debug', 'width=600,height=400,scrollbars=yes,resizable=yes');
+      
+      if (debugWindow) {
+        debugWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>XCLV Debug - Element Analysis</title>
+            <style>
+              body { font-family: monospace; margin: 20px; background: #1a1a2e; color: #fff; }
+              h2 { color: #00ff88; border-bottom: 1px solid #00ff88; padding-bottom: 5px; }
+              .section { margin: 20px 0; padding: 10px; background: #0f0f23; border-radius: 5px; }
+              .key { color: #00ff88; font-weight: bold; }
+              .value { color: #e0e0e0; }
+              pre { background: #000; padding: 10px; border-radius: 5px; overflow-x: auto; }
+            </style>
+          </head>
+          <body>
+            <h2>🎯 XCLV Element Analysis Debug</h2>
+            
+            <div class="section">
+              <h3>Element Details</h3>
+              <p><span class="key">Tag:</span> <span class="value">${debugData.element.tagName}</span></p>
+              <p><span class="key">ID:</span> <span class="value">${debugData.element.id || 'None'}</span></p>
+              <p><span class="key">Classes:</span> <span class="value">${debugData.element.className || 'None'}</span></p>
+              <p><span class="key">Text Length:</span> <span class="value">${text.length} characters</span></p>
+            </div>
+            
+            <div class="section">
+              <h3>Text Content</h3>
+              <pre>${text}</pre>
+            </div>
+            
+            <div class="section">
+              <h3>Context</h3>
+              <p><span class="key">Parent:</span> <span class="value">${debugData.context.parent}</span></p>
+              <p><span class="key">Siblings:</span> <span class="value">${debugData.context.siblings}</span></p>
+              <p><span class="key">URL:</span> <span class="value">${debugData.url}</span></p>
+              <p><span class="key">Timestamp:</span> <span class="value">${debugData.timestamp}</span></p>
+            </div>
+            
+            <div class="section">
+              <h3>Raw HTML</h3>
+              <pre>${debugData.element.innerHTML}</pre>
+            </div>
+          </body>
+          </html>
+        `);
+        debugWindow.document.close();
+      }
+      
+    } catch (error) {
+      console.error('XCLV: Failed to show debug popup:', error);
     }
   }
 
@@ -609,7 +737,7 @@ class InteractiveContentAnalyzer {
     // Position overlay
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 10}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
@@ -632,13 +760,13 @@ class InteractiveContentAnalyzer {
     // Position overlay
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 10}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
     
-    // Auto-hide after 5 seconds
-    setTimeout(() => this.hideAnalysisOverlay(), 5000);
+    // Auto-hide after 8 seconds
+    setTimeout(() => this.hideAnalysisOverlay(), 8000);
     
     // Add click-to-close
     this.analysisOverlay.addEventListener('click', () => this.hideAnalysisOverlay());
@@ -677,7 +805,7 @@ class InteractiveContentAnalyzer {
         ` : ''}
         
         <div class="xclv-result-footer">
-          <small>Click to close • Auto-closes in 5s</small>
+          <small>Click to close • Auto-closes in 8s</small>
         </div>
       </div>
     `;
@@ -699,7 +827,7 @@ class InteractiveContentAnalyzer {
     
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 10}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
@@ -719,28 +847,13 @@ class InteractiveContentAnalyzer {
     const notification = document.createElement('div');
     notification.className = 'xclv-mode-notification';
     notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #4CAF50;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000001;
-      animation: slideInRight 0.3s ease;
-    `;
     
     document.body.appendChild(notification);
     
     setTimeout(() => {
-      notification.style.animation = 'slideOutRight 0.3s ease';
+      notification.style.animation = 'xclvSlideOutRight 0.3s ease';
       setTimeout(() => notification.remove(), 300);
-    }, 2000);
+    }, 2500);
   }
 
   cleanup() {
