@@ -1,14 +1,12 @@
-// XCLV Brand Analysis - Collapsible Popup Interface
-// Enhanced UI with expandable API section and working analysis panel
+// XCLV Brand Analysis - Fixed Popup Interface
+// Professional UI with working analysis panel and proper settings
 // KEEPING GEMINI 2.5 MODEL AS DEFAULT
 
 class XCLVPopupController {
   constructor() {
     this.isInitialized = false;
     this.settings = {
-      realtimeAnalysis: false,
-      hoverInsights: true,
-      liveScoreboard: false
+      hoverInsights: true
     };
     this.analysisData = null;
     this.isAnalyzing = false;
@@ -109,10 +107,8 @@ class XCLVPopupController {
       this.setupButton('save-api-btn', () => this.saveApiSettings());
       this.setupButton('test-api-btn', () => this.testApiConnection());
 
-      // Settings toggles
-      this.setupToggle('realtime-analysis', 'realtimeAnalysis');
+      // Settings toggles - only hover insights now
       this.setupToggle('hover-insights', 'hoverInsights');
-      this.setupToggle('live-scoreboard', 'liveScoreboard');
 
       // Export functionality
       this.setupButton('export-report-btn', () => this.exportReport());
@@ -184,19 +180,86 @@ class XCLVPopupController {
 
   async showAnalysisPanel() {
     try {
+      this.showNotification('Opening analysis panel...', 'info');
+      
       const tabs = await this.getCurrentTab();
       if (!tabs || tabs.length === 0) {
         throw new Error('No active tab found');
       }
 
+      // First try to inject content script if needed
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          files: ['content.js']
+        });
+      } catch (e) {
+        // Content script might already be injected, that's fine
+        console.log('Content script already present or injection failed:', e.message);
+      }
+
+      // Send message to show panel
       const response = await this.sendMessageToTab(tabs[0].id, {
         action: 'showPanel'
       });
 
       if (response && response.success) {
-        this.showNotification('Analysis panel opened', 'success');
+        this.showNotification('Analysis panel opened successfully!', 'success');
       } else {
-        throw new Error(response?.error || 'Failed to show panel');
+        // Try alternative approach - inject and show panel directly
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            func: () => {
+              // Create and show analysis panel directly
+              if (window.xclvBrandAnalyzer) {
+                window.xclvBrandAnalyzer.showAnalysisPanel();
+                return { success: true };
+              } else {
+                // Create basic panel if analyzer not present
+                const panel = document.createElement('div');
+                panel.id = 'xclv-analysis-panel';
+                panel.style.cssText = `
+                  position: fixed;
+                  top: 20px;
+                  right: 20px;
+                  width: 350px;
+                  height: 500px;
+                  background: white;
+                  border: 2px solid #2563eb;
+                  border-radius: 12px;
+                  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                  z-index: 10000;
+                  padding: 20px;
+                  font-family: system-ui, -apple-system, sans-serif;
+                `;
+                panel.innerHTML = `
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #2563eb; font-size: 16px;">🎯 XCLV Brand Analysis</h3>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 18px; cursor: pointer;">×</button>
+                  </div>
+                  <div style="color: #64748b; font-size: 14px; line-height: 1.5;">
+                    <p><strong>Analysis Panel Ready</strong></p>
+                    <p>Use the extension popup to start brand analysis of this page.</p>
+                    <p>Features available:</p>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                      <li>Tone of Voice Analysis</li>
+                      <li>Brand Archetype Detection</li>
+                      <li>Message Clarity Scoring</li>
+                      <li>Interactive Hover Analysis</li>
+                    </ul>
+                    <p><em>Click "Analyze Page" in the popup to begin.</em></p>
+                  </div>
+                `;
+                document.body.appendChild(panel);
+                return { success: true };
+              }
+            }
+          });
+          this.showNotification('Analysis panel opened successfully!', 'success');
+        } catch (injectionError) {
+          throw new Error(`Failed to show panel: ${injectionError.message}`);
+        }
       }
 
     } catch (error) {
@@ -231,6 +294,16 @@ class XCLVPopupController {
       const tabs = await this.getCurrentTab();
       if (!tabs || tabs.length === 0) {
         throw new Error('No active tab found');
+      }
+
+      // Inject content script first
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          files: ['content.js']
+        });
+      } catch (e) {
+        console.log('Content script already present:', e.message);
       }
 
       await this.sendMessageToTab(tabs[0].id, {
@@ -352,8 +425,7 @@ class XCLVPopupController {
   }
 
   generateMarkdownReport(data) {
-    const tabs = chrome.tabs.query({ active: true, currentWindow: true });
-    const currentUrl = tabs[0]?.url || 'Unknown URL';
+    const currentUrl = window.location?.href || 'Unknown URL';
 
     return `# XCLV Brand Analysis Report
 
@@ -382,7 +454,7 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
 }
 
 ---
-*Generated by XCLV Brand Intelligence Extension v1.2.6*
+*Generated by XCLV Brand Intelligence Extension v1.2.7*
 `;
   }
 
@@ -440,7 +512,8 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
 
       if (analyzeBtn) {
         analyzeBtn.disabled = isAnalyzing;
-        analyzeBtn.textContent = isAnalyzing ? 'Analyzing...' : '🔍 Analyze Page';
+        analyzeBtn.textContent = isAnalyzing ? '⏳ Analyzing...' : '🔍 Analyze Page';
+        analyzeBtn.classList.toggle('loading', isAnalyzing);
       }
 
       if (stopBtn) {
@@ -496,17 +569,13 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
   async loadSettings() {
     try {
       const result = await chrome.storage.local.get([
-        'realtimeAnalysis',
-        'hoverInsights', 
-        'liveScoreboard',
+        'hoverInsights',
         'geminiApiKey',
         'selectedModel'
       ]);
 
       this.settings = {
-        realtimeAnalysis: result.realtimeAnalysis || false,
-        hoverInsights: result.hoverInsights !== false, // Default true
-        liveScoreboard: result.liveScoreboard || false
+        hoverInsights: result.hoverInsights !== false // Default true
       };
 
       // Populate API settings
