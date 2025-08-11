@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "XCLV Brand Analysis",
-  "version": "1.2.8",
+  "version": "1.2.10",
   "description": "Strategic brand intelligence powered by Google Gemini. Complete floating analysis panel with ToV, Message Clarity, and Brand Archetypes checkboxes for comprehensive brand analysis on any webpage.",
   
   "author": "XCLV Brand Intelligence",
