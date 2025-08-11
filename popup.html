@@ -10,8 +10,8 @@
     }
 
     body {
-      width: 350px;
-      height: 500px;
+      width: 380px;
+      height: 600px;
       background: linear-gradient(145deg, #0f0f23, #1a1a2e);
       color: #ffffff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -46,8 +46,109 @@
 
     .popup-content {
       padding: 20px;
-      height: calc(100% - 140px);
+      height: calc(100% - 160px);
       overflow-y: auto;
+    }
+
+    .api-setup {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid rgba(255, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .api-setup.configured {
+      background: rgba(0, 255, 136, 0.1);
+      border-color: rgba(0, 255, 136, 0.3);
+    }
+
+    .api-status-text {
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .api-form {
+      margin-top: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      color: #b0b0b0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #00ff88;
+      box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+    }
+
+    .form-input::placeholder {
+      color: #666;
+    }
+
+    .api-key-input {
+      font-family: monospace;
+      letter-spacing: 1px;
+    }
+
+    .api-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+
+    .btn-save {
+      background: linear-gradient(45deg, #00ff88, #00ccaa);
+      color: #000;
+    }
+
+    .btn-test {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-test:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .status-card {
@@ -294,6 +395,11 @@
       transform: translateY(0);
     }
 
+    .notification.error {
+      background: rgba(255, 68, 68, 0.9);
+      color: #fff;
+    }
+
     .brand-preview {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
@@ -327,6 +433,51 @@
       letter-spacing: 0.5px;
       margin-top: 8px;
     }
+
+    .model-info {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .cost-estimate {
+      background: rgba(0, 255, 136, 0.05);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-top: 8px;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .api-link {
+      color: #00ff88;
+      text-decoration: none;
+      font-size: 10px;
+    }
+
+    .api-link:hover {
+      text-decoration: underline;
+    }
+
+    .validation-message {
+      font-size: 10px;
+      margin-top: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .validation-success {
+      background: rgba(0, 255, 136, 0.1);
+      color: #00ff88;
+      border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .validation-error {
+      background: rgba(255, 68, 68, 0.1);
+      color: #ff4444;
+      border: 1px solid rgba(255, 68, 68, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -338,11 +489,59 @@
   </div>
 
   <div class="popup-content">
+    <!-- API Configuration Section -->
+    <div class="api-setup" id="apiSetup">
+      <div class="api-status-text" id="apiStatusText">
+        Configure Gemini API to enable brand analysis
+      </div>
+      
+      <div class="api-form" id="apiForm">
+        <div class="form-group">
+          <label class="form-label" for="apiKeyInput">Gemini API Key</label>
+          <input 
+            type="password" 
+            id="apiKeyInput" 
+            class="form-input api-key-input" 
+            placeholder="Enter your Gemini API key"
+            maxlength="100"
+          >
+          <div class="model-info">
+            Get your free API key at <a href="#" class="api-link" id="apiKeyLink">Google AI Studio</a>
+          </div>
+          <div class="validation-message hidden" id="keyValidation"></div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="modelSelect">Gemini Model</label>
+          <select id="modelSelect" class="form-select">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended)</option>
+            <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Faster)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+            <option value="gemini-1.0-pro">Gemini 1.0 Pro (Stable)</option>
+          </select>
+          <div class="model-info" id="modelInfo">
+            Fast and cost-effective for brand analysis
+          </div>
+        </div>
+        
+        <div class="cost-estimate" id="costEstimate">
+          Estimated cost: $0.01-0.05 per analysis
+        </div>
+        
+        <div class="api-actions">
+          <button class="btn-small btn-save" id="saveApiBtn">Save</button>
+          <button class="btn-small btn-test" id="testApiBtn" disabled>Test</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analysis Status -->
     <div class="status-card">
       <div class="status-indicator" id="statusIndicator"></div>
       <span class="status-text" id="statusText">Analysis Inactive</span>
     </div>
 
+    <!-- Quick Stats -->
     <div class="quick-stats" id="quickStats">
       <div class="stat-item">
         <span class="stat-value" id="overallScore">--</span>
@@ -362,6 +561,7 @@
       </div>
     </div>
 
+    <!-- Brand Preview -->
     <div class="brand-preview hidden" id="brandPreview">
       <div class="preview-title">Brand Snapshot</div>
       <div class="preview-content" id="previewContent">
@@ -370,9 +570,10 @@
       <div class="archetype-badge" id="primaryArchetype">Unknown</div>
     </div>
 
+    <!-- Action Buttons -->
     <div class="action-buttons">
-      <button class="btn btn-primary" id="analyzeBtn">
-        Start Brand Analysis
+      <button class="btn btn-primary" id="analyzeBtn" disabled>
+        Configure API First
       </button>
       <button class="btn btn-secondary" id="togglePanelBtn">
         Show Analysis Panel
@@ -382,8 +583,9 @@
       </button>
     </div>
 
+    <!-- Settings -->
     <div class="settings-section">
-      <div class="settings-title">Settings</div>
+      <div class="settings-title">Analysis Settings</div>
       
       <div class="setting-item">
         <span class="setting-label">Real-time Analysis</span>
