@@ -1,5 +1,5 @@
 // XCLV Brand Analysis - Popup Script
-// Extension Control Interface
+// Extension Control Interface with Gemini API Management
 
 class PopupController {
   constructor() {
@@ -11,10 +11,16 @@ class PopupController {
       hoverInsights: true,
       liveScoreboard: false
     };
+    this.apiConfiguration = {
+      geminiApiKey: '',
+      selectedModel: 'gemini-1.5-flash',
+      isConfigured: false
+    };
   }
 
   async initialize() {
     await this.loadSettings();
+    await this.loadAPIConfiguration();
     await this.getCurrentTabInfo();
     this.setupEventListeners();
     this.updateUI();
@@ -32,11 +38,35 @@ class PopupController {
     }
   }
 
+  async loadAPIConfiguration() {
+    try {
+      const result = await chrome.storage.sync.get(['geminiApiKey', 'selectedModel']);
+      this.apiConfiguration = {
+        geminiApiKey: result.geminiApiKey || '',
+        selectedModel: result.selectedModel || 'gemini-1.5-flash',
+        isConfigured: !!(result.geminiApiKey && result.geminiApiKey.length > 10)
+      };
+    } catch (error) {
+      console.error('Failed to load API configuration:', error);
+    }
+  }
+
   async saveSettings() {
     try {
       await chrome.storage.sync.set({ xclvSettings: this.settings });
     } catch (error) {
       console.error('Failed to save settings:', error);
+    }
+  }
+
+  async saveAPIConfiguration() {
+    try {
+      await chrome.storage.sync.set({
+        geminiApiKey: this.apiConfiguration.geminiApiKey,
+        selectedModel: this.apiConfiguration.selectedModel
+      });
+    } catch (error) {
+      console.error('Failed to save API configuration:', error);
     }
   }
 
@@ -50,6 +80,39 @@ class PopupController {
   }
 
   setupEventListeners() {
+    // API Configuration
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const modelSelect = document.getElementById('modelSelect');
+    const saveApiBtn = document.getElementById('saveApiBtn');
+    const testApiBtn = document.getElementById('testApiBtn');
+    const apiKeyLink = document.getElementById('apiKeyLink');
+
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener('input', (e) => this.handleAPIKeyInput(e));
+      apiKeyInput.addEventListener('paste', (e) => {
+        setTimeout(() => this.handleAPIKeyInput({ target: e.target }), 10);
+      });
+    }
+
+    if (modelSelect) {
+      modelSelect.addEventListener('change', (e) => this.handleModelChange(e));
+    }
+
+    if (saveApiBtn) {
+      saveApiBtn.addEventListener('click', () => this.saveAPISettings());
+    }
+
+    if (testApiBtn) {
+      testApiBtn.addEventListener('click', () => this.testAPIConnection());
+    }
+
+    if (apiKeyLink) {
+      apiKeyLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: 'https://aistudio.google.com/app/apikey' });
+      });
+    }
+
     // Main action buttons
     const analyzeBtn = document.getElementById('analyzeBtn');
     const togglePanelBtn = document.getElementById('togglePanelBtn');
@@ -111,28 +174,209 @@ class PopupController {
     }
   }
 
+  handleAPIKeyInput(e) {
+    const value = e.target.value.trim();
+    const testBtn = document.getElementById('testApiBtn');
+    const saveBtn = document.getElementById('saveApiBtn');
+    const validation = document.getElementById('keyValidation');
+
+    // Basic validation
+    if (value.length === 0) {
+      testBtn.disabled = true;
+      saveBtn.disabled = true;
+      validation.classList.add('hidden');
+    } else if (value.length < 20) {
+      testBtn.disabled = true;
+      saveBtn.disabled = false;
+      this.showValidation('API key seems too short', 'error');
+    } else if (!value.startsWith('AIza')) {
+      testBtn.disabled = true;
+      saveBtn.disabled = false;
+      this.showValidation('Invalid Gemini API key format', 'error');
+    } else {
+      testBtn.disabled = false;
+      saveBtn.disabled = false;
+      this.showValidation('API key format looks valid', 'success');
+    }
+
+    this.apiConfiguration.geminiApiKey = value;
+  }
+
+  handleModelChange(e) {
+    this.apiConfiguration.selectedModel = e.target.value;
+    this.updateModelInfo();
+    this.updateCostEstimate();
+  }
+
+  showValidation(message, type) {
+    const validation = document.getElementById('keyValidation');
+    if (!validation) return;
+
+    validation.textContent = message;
+    validation.className = `validation-message validation-${type}`;
+    validation.classList.remove('hidden');
+  }
+
+  updateModelInfo() {
+    const modelInfo = document.getElementById('modelInfo');
+    if (!modelInfo) return;
+
+    const modelDescriptions = {
+      'gemini-1.5-flash': 'Fast and cost-effective for brand analysis',
+      'gemini-1.5-flash-8b': 'Ultra-fast with lower cost per request',
+      'gemini-1.5-pro': 'Advanced reasoning for complex analysis',
+      'gemini-1.0-pro': 'Stable and reliable for consistent results'
+    };
+
+    modelInfo.textContent = modelDescriptions[this.apiConfiguration.selectedModel] || 'Advanced AI model';
+  }
+
+  updateCostEstimate() {
+    const costEstimate = document.getElementById('costEstimate');
+    if (!costEstimate) return;
+
+    const costEstimates = {
+      'gemini-1.5-flash': '$0.01-0.03 per analysis',
+      'gemini-1.5-flash-8b': '$0.005-0.015 per analysis',
+      'gemini-1.5-pro': '$0.05-0.15 per analysis',
+      'gemini-1.0-pro': '$0.02-0.06 per analysis'
+    };
+
+    costEstimate.textContent = `Estimated cost: ${costEstimates[this.apiConfiguration.selectedModel] || '$0.01-0.05 per analysis'}`;
+  }
+
+  async saveAPISettings() {
+    const saveBtn = document.getElementById('saveApiBtn');
+    if (!saveBtn) return;
+
+    saveBtn.innerHTML = 'Saving... <span class="loading-spinner"></span>';
+    saveBtn.disabled = true;
+
+    try {
+      await this.saveAPIConfiguration();
+      this.apiConfiguration.isConfigured = !!(this.apiConfiguration.geminiApiKey && this.apiConfiguration.geminiApiKey.length > 10);
+      this.updateAPIStatus();
+      this.showNotification('API settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save API settings:', error);
+      this.showNotification('Failed to save settings', 'error');
+    } finally {
+      saveBtn.innerHTML = 'Save';
+      saveBtn.disabled = false;
+    }
+  }
+
+  async testAPIConnection() {
+    const testBtn = document.getElementById('testApiBtn');
+    if (!testBtn) return;
+
+    testBtn.innerHTML = 'Testing... <span class="loading-spinner"></span>';
+    testBtn.disabled = true;
+
+    try {
+      // Save current settings first
+      await this.saveAPIConfiguration();
+
+      // Test the API connection
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.apiConfiguration.selectedModel}:generateContent?key=${this.apiConfiguration.geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: 'Hello, respond with just "API connection successful"'
+            }]
+          }]
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.candidates && data.candidates[0]) {
+          this.apiConfiguration.isConfigured = true;
+          this.showValidation('API connection successful!', 'success');
+          this.showNotification('Gemini API connected successfully');
+          this.updateAPIStatus();
+        } else {
+          throw new Error('Invalid API response format');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('API test failed:', error);
+      this.apiConfiguration.isConfigured = false;
+      this.showValidation(`Connection failed: ${error.message}`, 'error');
+      this.showNotification('API connection failed', 'error');
+      this.updateAPIStatus();
+    } finally {
+      testBtn.innerHTML = 'Test';
+      testBtn.disabled = false;
+    }
+  }
+
   updateUI() {
-    this.updateStatus();
+    this.updateAPIStatus();
+    this.updateAnalysisStatus();
     this.updateSettingsToggles();
     this.updateQuickStats();
     this.updateBrandPreview();
+    this.updateModelInfo();
+    this.updateCostEstimate();
+    this.populateAPIForm();
   }
 
-  updateStatus() {
+  updateAPIStatus() {
+    const apiSetup = document.getElementById('apiSetup');
+    const apiStatusText = document.getElementById('apiStatusText');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    if (this.apiConfiguration.isConfigured) {
+      apiSetup.classList.add('configured');
+      apiStatusText.textContent = `Gemini API configured (${this.apiConfiguration.selectedModel})`;
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = this.isAnalysisActive ? 'Stop Analysis' : 'Start Brand Analysis';
+    } else {
+      apiSetup.classList.remove('configured');
+      apiStatusText.textContent = 'Configure Gemini API to enable brand analysis';
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Configure API First';
+    }
+  }
+
+  populateAPIForm() {
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const modelSelect = document.getElementById('modelSelect');
+
+    if (apiKeyInput && this.apiConfiguration.geminiApiKey) {
+      apiKeyInput.value = this.apiConfiguration.geminiApiKey;
+    }
+
+    if (modelSelect) {
+      modelSelect.value = this.apiConfiguration.selectedModel;
+    }
+
+    // Trigger validation for existing key
+    if (apiKeyInput && this.apiConfiguration.geminiApiKey) {
+      this.handleAPIKeyInput({ target: apiKeyInput });
+    }
+  }
+
+  updateAnalysisStatus() {
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
-    const analyzeBtn = document.getElementById('analyzeBtn');
 
     if (this.isAnalysisActive) {
       statusIndicator.classList.remove('inactive');
       statusIndicator.classList.add('active');
       statusText.textContent = 'Analysis Active';
-      analyzeBtn.textContent = 'Stop Analysis';
     } else {
       statusIndicator.classList.remove('active');
       statusIndicator.classList.add('inactive');
       statusText.textContent = 'Analysis Inactive';
-      analyzeBtn.textContent = 'Start Brand Analysis';
     }
   }
 
@@ -178,7 +422,7 @@ class PopupController {
       }
 
       if (analysisTime) {
-        analysisTime.textContent = '< 1s';
+        analysisTime.textContent = '< 2s';
       }
     } else {
       // Show placeholders
@@ -212,6 +456,11 @@ class PopupController {
   }
 
   async toggleAnalysis() {
+    if (!this.apiConfiguration.isConfigured) {
+      this.showNotification('Please configure Gemini API first', 'error');
+      return;
+    }
+
     if (!this.currentTab) {
       this.showNotification('No active tab found', 'error');
       return;
@@ -236,7 +485,7 @@ class PopupController {
         // Get analysis results
         setTimeout(async () => {
           await this.refreshAnalysisData();
-        }, 2000);
+        }, 3000);
         
         this.showNotification('Brand analysis started');
       }
@@ -245,12 +494,12 @@ class PopupController {
       this.showNotification('Analysis failed to start', 'error');
     } finally {
       if (analyzeBtn) {
-        analyzeBtn.disabled = false;
+        analyzeBtn.disabled = !this.apiConfiguration.isConfigured;
         analyzeBtn.innerHTML = this.isAnalysisActive ? 'Stop Analysis' : 'Start Brand Analysis';
       }
     }
 
-    this.updateStatus();
+    this.updateAnalysisStatus();
   }
 
   async togglePanel() {
@@ -280,6 +529,7 @@ class PopupController {
         url: this.currentTab?.url || 'unknown',
         timestamp: new Date().toISOString(),
         domain: this.currentTab?.url ? new URL(this.currentTab.url).hostname : 'unknown',
+        model: this.apiConfiguration.selectedModel,
         analysis: this.analysisData,
         summary: {
           overallScore: this.calculateOverallScore(this.analysisData),
@@ -528,6 +778,18 @@ class KeyboardShortcuts {
       if (e.altKey && e.key === 'e') {
         e.preventDefault();
         this.popupController.exportReport();
+      }
+
+      // Alt + S: Save API settings
+      if (e.altKey && e.key === 's') {
+        e.preventDefault();
+        this.popupController.saveAPISettings();
+      }
+
+      // Alt + T: Test API connection
+      if (e.altKey && e.key === 't') {
+        e.preventDefault();
+        this.popupController.testAPIConnection();
       }
 
       // Escape: Close popup
