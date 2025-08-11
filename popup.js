@@ -1,5 +1,6 @@
 // XCLV Brand Analysis - Collapsible Popup Interface
 // Enhanced UI with expandable API section and working analysis panel
+// KEEPING GEMINI 2.5 MODEL AS DEFAULT
 
 class XCLVPopupController {
   constructor() {
@@ -278,7 +279,7 @@ class XCLVPopupController {
 
       const result = await chrome.storage.local.set({
         geminiApiKey: apiKey,
-        selectedModel: selectedModel || 'gemini-1.5-flash'
+        selectedModel: selectedModel || 'gemini-2.5-flash' // KEEP 2.5 AS DEFAULT
       });
 
       // Update background service
@@ -286,7 +287,7 @@ class XCLVPopupController {
         action: 'updateApiSettings',
         data: {
           apiKey: apiKey,
-          selectedModel: selectedModel || 'gemini-1.5-flash'
+          selectedModel: selectedModel || 'gemini-2.5-flash' // KEEP 2.5 AS DEFAULT
         }
       });
 
