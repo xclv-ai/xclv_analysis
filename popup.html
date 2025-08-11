@@ -1,666 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      width: 380px;
-      height: 640px;
-      background: linear-gradient(145deg, #0f0f23, #1a1a2e);
-      color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-    }
-
-    .popup-header {
-      padding: 20px;
-      background: rgba(0, 255, 136, 0.1);
-      border-bottom: 1px solid rgba(0, 255, 136, 0.2);
-      text-align: center;
-    }
-
-    .logo {
-      background: linear-gradient(45deg, #00ff88, #00ccaa);
-      color: #000;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 18px;
-      letter-spacing: 2px;
-      display: inline-block;
-      margin-bottom: 8px;
-    }
-
-    .tagline {
-      font-size: 12px;
-      color: #b0b0b0;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .popup-content {
-      padding: 20px;
-      height: calc(100% - 160px);
-      overflow-y: auto;
-    }
-
-    .api-setup {
-      background: rgba(255, 68, 68, 0.1);
-      border: 1px solid rgba(255, 68, 68, 0.3);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-
-    .api-setup.configured {
-      background: rgba(0, 255, 136, 0.1);
-      border-color: rgba(0, 255, 136, 0.3);
-    }
-
-    .api-status-text {
-      font-size: 12px;
-      margin-bottom: 8px;
-    }
-
-    .api-form {
-      margin-top: 12px;
-    }
-
-    .form-group {
-      margin-bottom: 12px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 11px;
-      color: #b0b0b0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-    }
-
-    .form-input, .form-select {
-      width: 100%;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      color: #ffffff;
-      font-size: 12px;
-      font-family: inherit;
-    }
-
-    .form-input:focus, .form-select:focus {
-      outline: none;
-      border-color: #00ff88;
-      box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
-    }
-
-    .form-input::placeholder {
-      color: #666;
-    }
-
-    .api-key-input {
-      font-family: monospace;
-      letter-spacing: 1px;
-    }
-
-    .api-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .btn-small {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      flex: 1;
-    }
-
-    .btn-save {
-      background: linear-gradient(45deg, #00ff88, #00ccaa);
-      color: #000;
-    }
-
-    .btn-test {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-save:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
-    }
-
-    .btn-test:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .status-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
-    }
-
-    .status-indicator.active {
-      background: #00ff88;
-      box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-    }
-
-    .status-indicator.inactive {
-      background: #666;
-    }
-
-    .status-text {
-      font-size: 14px;
-      color: #ffffff;
-    }
-
-    .quick-stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .stat-item {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #00ff88;
-      display: block;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: #b0b0b0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-    }
-
-    .action-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .btn {
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(45deg, #00ff88, #00ccaa);
-      color: #000;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-interactive {
-      background: linear-gradient(45deg, #ff6b35, #f7931e);
-      color: #000;
-    }
-
-    .btn-interactive:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
-    }
-
-    .btn-interactive.active {
-      background: linear-gradient(45deg, #f7931e, #ff6b35);
-      box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    .settings-section {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .settings-title {
-      font-size: 12px;
-      color: #b0b0b0;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-    }
-
-    .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .setting-label {
-      font-size: 13px;
-      color: #ffffff;
-    }
-
-    .toggle-switch {
-      position: relative;
-      width: 40px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .toggle-switch.active {
-      background: #00ff88;
-    }
-
-    .toggle-switch::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 16px;
-      height: 16px;
-      background: #ffffff;
-      border-radius: 50%;
-      transition: transform 0.2s ease;
-    }
-
-    .toggle-switch.active::after {
-      transform: translateX(20px);
-    }
-
-    .popup-footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 16px 20px;
-      background: rgba(0, 0, 0, 0.3);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      text-align: center;
-    }
-
-    .footer-text {
-      font-size: 10px;
-      color: #666;
-      margin-bottom: 8px;
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    .footer-link {
-      color: #00ff88;
-      text-decoration: none;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .footer-link:hover {
-      text-decoration: underline;
-    }
-
-    .loading-spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(0, 255, 136, 0.3);
-      border-radius: 50%;
-      border-top-color: #00ff88;
-      animation: spin 1s ease-in-out infinite;
-      margin-left: 8px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .pulse {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    .notification {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      background: rgba(0, 255, 136, 0.9);
-      color: #000;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-      transform: translateY(-100%);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-    }
-
-    .notification.show {
-      transform: translateY(0);
-    }
-
-    .notification.error {
-      background: rgba(255, 68, 68, 0.9);
-      color: #fff;
-    }
-
-    .brand-preview {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-    }
-
-    .preview-title {
-      font-size: 12px;
-      color: #b0b0b0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .preview-content {
-      font-size: 13px;
-      color: #ffffff;
-      line-height: 1.4;
-    }
-
-    .archetype-badge {
-      display: inline-block;
-      background: rgba(0, 255, 136, 0.2);
-      color: #00ff88;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 8px;
-    }
-
-    .model-info {
-      font-size: 10px;
-      color: #666;
-      margin-top: 4px;
-    }
-
-    .cost-estimate {
-      background: rgba(0, 255, 136, 0.05);
-      border: 1px solid rgba(0, 255, 136, 0.2);
-      border-radius: 4px;
-      padding: 6px 8px;
-      margin-top: 8px;
-      font-size: 10px;
-      text-align: center;
-    }
-
-    .api-link {
-      color: #00ff88;
-      text-decoration: none;
-      font-size: 10px;
-    }
-
-    .api-link:hover {
-      text-decoration: underline;
-    }
-
-    .validation-message {
-      font-size: 10px;
-      margin-top: 4px;
-      padding: 4px 8px;
-      border-radius: 4px;
-    }
-
-    .validation-success {
-      background: rgba(0, 255, 136, 0.1);
-      color: #00ff88;
-      border: 1px solid rgba(0, 255, 136, 0.2);
-    }
-
-    .validation-error {
-      background: rgba(255, 68, 68, 0.1);
-      color: #ff4444;
-      border: 1px solid rgba(255, 68, 68, 0.2);
-    }
-
-    .model-badge {
-      font-size: 8px;
-      background: rgba(0, 255, 136, 0.2);
-      color: #00ff88;
-      padding: 2px 6px;
-      border-radius: 3px;
-      margin-left: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .interactive-mode-info {
-      background: rgba(255, 107, 53, 0.1);
-      border: 1px solid rgba(255, 107, 53, 0.2);
-      border-radius: 6px;
-      padding: 8px;
-      margin-bottom: 12px;
-      font-size: 11px;
-      color: #ff9a73;
-      text-align: center;
-    }
-
-    .interactive-mode-info.active {
-      background: rgba(255, 107, 53, 0.2);
-      border-color: rgba(255, 107, 53, 0.4);
-      color: #ffb899;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XCLV Brand Analysis</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="notification" id="notification"></div>
-  
-  <div class="popup-header">
-    <div class="logo">XCLV</div>
-    <div class="tagline">Brand Intelligence</div>
-  </div>
-
-  <div class="popup-content">
-    <!-- API Configuration Section -->
-    <div class="api-setup" id="apiSetup">
-      <div class="api-status-text" id="apiStatusText">
-        Configure Gemini 2.5 API to enable brand analysis
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">🎯</div>
+        <div class="logo-text">
+          <span class="brand">XCLV</span>
+          <span class="subtitle">BRAND INTELLIGENCE</span>
+        </div>
       </div>
+      <div class="status-indicator" id="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Ready</span>
+      </div>
+    </header>
+
+    <!-- Notification Area -->
+    <div id="notification" class="notification" style="display: none;"></div>
+
+    <!-- Main Actions -->
+    <section class="main-actions">
+      <button id="analyze-page-btn" class="btn primary large">
+        🔍 Analyze Page
+      </button>
       
-      <div class="api-form" id="apiForm">
-        <div class="form-group">
-          <label class="form-label" for="apiKeyInput">Gemini API Key</label>
-          <input 
-            type="password" 
-            id="apiKeyInput" 
-            class="form-input api-key-input" 
-            placeholder="Enter your Gemini API key"
-            maxlength="100"
-          >
-          <div class="model-info">
-            Get your free API key at <a href="#" class="api-link" id="apiKeyLink">Google AI Studio</a>
-          </div>
-          <div class="validation-message hidden" id="keyValidation"></div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label" for="modelSelect">Gemini 2.5 Model</label>
-          <select id="modelSelect" class="form-select">
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash<span class="model-badge">Recommended</span></option>
-            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite<span class="model-badge">Fastest</span></option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro<span class="model-badge">Advanced</span></option>
-          </select>
-          <div class="model-info" id="modelInfo">
-            Latest AI model with enhanced reasoning and speed
-          </div>
-        </div>
-        
-        <div class="cost-estimate" id="costEstimate">
-          Estimated cost: $0.005-0.02 per analysis
-        </div>
-        
-        <div class="api-actions">
-          <button class="btn-small btn-save" id="saveApiBtn">Save</button>
-          <button class="btn-small btn-test" id="testApiBtn" disabled>Test</button>
-        </div>
+      <div class="action-row">
+        <button id="show-panel-btn" class="btn secondary">
+          📊 Show Analysis Panel
+        </button>
+        <button id="stop-analysis-btn" class="btn danger" style="display: none;">
+          ⏹️ Stop Analysis
+        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Analysis Status -->
-    <div class="status-card">
-      <div class="status-indicator" id="statusIndicator"></div>
-      <span class="status-text" id="statusText">Analysis Inactive</span>
-    </div>
+    <!-- Interactive Mode -->
+    <section class="section">
+      <h3>Interactive Mode</h3>
+      <div class="interactive-controls">
+        <button id="enable-interactive-btn" class="btn secondary small">
+          ✨ Enable Hover Analysis
+        </button>
+        <button id="disable-interactive-btn" class="btn secondary small">
+          ❌ Disable Interactive
+        </button>
+      </div>
+    </section>
 
-    <!-- Quick Stats -->
-    <div class="quick-stats" id="quickStats">
-      <div class="stat-item">
-        <span class="stat-value" id="overallScore">--</span>
-        <span class="stat-label">Brand Score</span>
+    <!-- Analysis Results -->
+    <section id="analysis-results" class="section results-section" style="display: none;">
+      <h3>Analysis Results</h3>
+      <div id="results-content">
+        <!-- Results will be populated here -->
       </div>
-      <div class="stat-item">
-        <span class="stat-value" id="pageElements">--</span>
-        <span class="stat-label">Elements</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-value" id="clarityAvg">--</span>
-        <span class="stat-label">Clarity</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-value" id="analysisTime">--</span>
-        <span class="stat-label">Analysis</span>
-      </div>
-    </div>
-
-    <!-- Brand Preview -->
-    <div class="brand-preview hidden" id="brandPreview">
-      <div class="preview-title">Brand Snapshot</div>
-      <div class="preview-content" id="previewContent">
-        No analysis data available
-      </div>
-      <div class="archetype-badge" id="primaryArchetype">Unknown</div>
-    </div>
-
-    <!-- Interactive Mode Info -->
-    <div class="interactive-mode-info hidden" id="interactiveModeInfo">
-      🔍 Hover over text blocks and click "Analyze Content" to get detailed insights
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <button class="btn btn-primary" id="analyzeBtn" disabled>
-        Configure API First
-      </button>
-      <button class="btn btn-interactive" id="interactiveModeBtn">
-        🎯 Enable Interactive Mode
-      </button>
-      <button class="btn btn-secondary" id="togglePanelBtn">
-        Show Analysis Panel
-      </button>
-      <button class="btn btn-secondary" id="exportBtn" disabled>
-        Export Report
-      </button>
-    </div>
+    </section>
 
     <!-- Settings -->
-    <div class="settings-section">
-      <div class="settings-title">Analysis Settings</div>
-      
-      <div class="setting-item">
-        <span class="setting-label">Real-time Analysis</span>
-        <div class="toggle-switch" id="realtimeToggle"></div>
+    <section class="section">
+      <h3>Settings</h3>
+      <div class="settings-grid">
+        <label class="setting-item">
+          <input type="checkbox" id="realtime-analysis">
+          <span class="checkmark"></span>
+          Real-time Analysis
+        </label>
+        
+        <label class="setting-item">
+          <input type="checkbox" id="hover-insights" checked>
+          <span class="checkmark"></span>
+          Hover Insights
+        </label>
+        
+        <label class="setting-item">
+          <input type="checkbox" id="live-scoreboard">
+          <span class="checkmark"></span>
+          Live Scoreboard
+        </label>
       </div>
-      
-      <div class="setting-item">
-        <span class="setting-label">Hover Insights</span>
-        <div class="toggle-switch active" id="hoverToggle"></div>
-      </div>
-      
-      <div class="setting-item">
-        <span class="setting-label">Live Scoreboard</span>
-        <div class="toggle-switch" id="scoreboardToggle"></div>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="popup-footer">
-    <div class="footer-text">Strategic Brand Intelligence</div>
-    <div class="footer-links">
-      <a href="#" class="footer-link" id="helpLink">Help</a>
-      <a href="#" class="footer-link" id="settingsLink">Settings</a>
-      <a href="#" class="footer-link" id="aboutLink">About</a>
-    </div>
+    <!-- Collapsible API Settings -->
+    <section id="api-settings-section" class="section collapsible collapsed">
+      <button id="api-toggle-btn" class="section-toggle">
+        ⚙️ API Settings
+      </button>
+      
+      <div id="api-settings-content" class="collapsible-content">
+        <div class="api-status" id="api-status">
+          <span class="status-text">Configure Gemini API</span>
+        </div>
+
+        <div class="form-group">
+          <label for="api-key-input">Gemini API Key</label>
+          <input 
+            type="password" 
+            id="api-key-input" 
+            placeholder="Enter your Gemini API key..."
+            class="input-field"
+          >
+          <small class="help-text">
+            Get your free API key at 
+            <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="model-select">Gemini Model</label>
+          <select id="model-select" class="select-field">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended)</option>
+            <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+          </select>
+          <small class="help-text">Latest AI model with enhanced reasoning and speed</small>
+        </div>
+
+        <div class="cost-estimate">
+          <span class="cost-text">Estimated cost: $0.005-0.02 per analysis</span>
+        </div>
+
+        <div class="api-actions">
+          <button id="save-api-btn" class="btn primary">
+            💾 Save Settings
+          </button>
+          <button id="test-api-btn" class="btn secondary">
+            🧪 Test Connection
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export -->
+    <section class="section">
+      <h3>Export</h3>
+      <button id="export-report-btn" class="btn secondary full-width">
+        📄 Export Analysis Report
+      </button>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="version-info">
+        <span>XCLV v1.2.6</span>
+        <span>•</span>
+        <span>Powered by Gemini</span>
+      </div>
+      <div class="links">
+        <a href="https://xclv.ai" target="_blank">🌐 Website</a>
+        <span>•</span>
+        <a href="https://github.com/xclv-ai/xclv_analysis" target="_blank">📚 Docs</a>
+      </div>
+    </footer>
   </div>
 
   <script src="popup.js"></script>
