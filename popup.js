@@ -1,0 +1,562 @@
+// XCLV Brand Analysis - Popup Script
+// Extension Control Interface
+
+class PopupController {
+  constructor() {
+    this.isAnalysisActive = false;
+    this.currentTab = null;
+    this.analysisData = null;
+    this.settings = {
+      realtimeAnalysis: false,
+      hoverInsights: true,
+      liveScoreboard: false
+    };
+  }
+
+  async initialize() {
+    await this.loadSettings();
+    await this.getCurrentTabInfo();
+    this.setupEventListeners();
+    this.updateUI();
+    this.checkAnalysisStatus();
+  }
+
+  async loadSettings() {
+    try {
+      const result = await chrome.storage.sync.get(['xclvSettings']);
+      if (result.xclvSettings) {
+        this.settings = { ...this.settings, ...result.xclvSettings };
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  }
+
+  async saveSettings() {
+    try {
+      await chrome.storage.sync.set({ xclvSettings: this.settings });
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    }
+  }
+
+  async getCurrentTabInfo() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      this.currentTab = tab;
+    } catch (error) {
+      console.error('Failed to get current tab:', error);
+    }
+  }
+
+  setupEventListeners() {
+    // Main action buttons
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const togglePanelBtn = document.getElementById('togglePanelBtn');
+    const exportBtn = document.getElementById('exportBtn');
+
+    if (analyzeBtn) {
+      analyzeBtn.addEventListener('click', () => this.toggleAnalysis());
+    }
+
+    if (togglePanelBtn) {
+      togglePanelBtn.addEventListener('click', () => this.togglePanel());
+    }
+
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => this.exportReport());
+    }
+
+    // Settings toggles
+    const realtimeToggle = document.getElementById('realtimeToggle');
+    const hoverToggle = document.getElementById('hoverToggle');
+    const scoreboardToggle = document.getElementById('scoreboardToggle');
+
+    if (realtimeToggle) {
+      realtimeToggle.addEventListener('click', () => this.toggleSetting('realtimeAnalysis'));
+    }
+
+    if (hoverToggle) {
+      hoverToggle.addEventListener('click', () => this.toggleSetting('hoverInsights'));
+    }
+
+    if (scoreboardToggle) {
+      scoreboardToggle.addEventListener('click', () => this.toggleSetting('liveScoreboard'));
+    }
+
+    // Footer links
+    const helpLink = document.getElementById('helpLink');
+    const settingsLink = document.getElementById('settingsLink');
+    const aboutLink = document.getElementById('aboutLink');
+
+    if (helpLink) {
+      helpLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.openHelp();
+      });
+    }
+
+    if (settingsLink) {
+      settingsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.openSettings();
+      });
+    }
+
+    if (aboutLink) {
+      aboutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.openAbout();
+      });
+    }
+  }
+
+  updateUI() {
+    this.updateStatus();
+    this.updateSettingsToggles();
+    this.updateQuickStats();
+    this.updateBrandPreview();
+  }
+
+  updateStatus() {
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    if (this.isAnalysisActive) {
+      statusIndicator.classList.remove('inactive');
+      statusIndicator.classList.add('active');
+      statusText.textContent = 'Analysis Active';
+      analyzeBtn.textContent = 'Stop Analysis';
+    } else {
+      statusIndicator.classList.remove('active');
+      statusIndicator.classList.add('inactive');
+      statusText.textContent = 'Analysis Inactive';
+      analyzeBtn.textContent = 'Start Brand Analysis';
+    }
+  }
+
+  updateSettingsToggles() {
+    const realtimeToggle = document.getElementById('realtimeToggle');
+    const hoverToggle = document.getElementById('hoverToggle');
+    const scoreboardToggle = document.getElementById('scoreboardToggle');
+
+    if (realtimeToggle) {
+      realtimeToggle.classList.toggle('active', this.settings.realtimeAnalysis);
+    }
+
+    if (hoverToggle) {
+      hoverToggle.classList.toggle('active', this.settings.hoverInsights);
+    }
+
+    if (scoreboardToggle) {
+      scoreboardToggle.classList.toggle('active', this.settings.liveScoreboard);
+    }
+  }
+
+  updateQuickStats() {
+    const overallScore = document.getElementById('overallScore');
+    const pageElements = document.getElementById('pageElements');
+    const clarityAvg = document.getElementById('clarityAvg');
+    const analysisTime = document.getElementById('analysisTime');
+
+    if (this.analysisData) {
+      // Update with real data
+      if (overallScore) {
+        const score = this.calculateOverallScore(this.analysisData);
+        overallScore.textContent = score;
+      }
+
+      if (pageElements) {
+        const elements = this.countPageElements(this.analysisData);
+        pageElements.textContent = elements;
+      }
+
+      if (clarityAvg) {
+        const clarity = this.calculateClarityAverage(this.analysisData);
+        clarityAvg.textContent = clarity;
+      }
+
+      if (analysisTime) {
+        analysisTime.textContent = '< 1s';
+      }
+    } else {
+      // Show placeholders
+      if (overallScore) overallScore.textContent = '--';
+      if (pageElements) pageElements.textContent = '--';
+      if (clarityAvg) clarityAvg.textContent = '--';
+      if (analysisTime) analysisTime.textContent = '--';
+    }
+  }
+
+  updateBrandPreview() {
+    const brandPreview = document.getElementById('brandPreview');
+    const previewContent = document.getElementById('previewContent');
+    const primaryArchetype = document.getElementById('primaryArchetype');
+
+    if (this.analysisData) {
+      brandPreview.classList.remove('hidden');
+      
+      if (previewContent) {
+        const preview = this.generateBrandPreview(this.analysisData);
+        previewContent.textContent = preview;
+      }
+
+      if (primaryArchetype && this.analysisData.archetypes) {
+        const archetype = this.analysisData.archetypes.primaryArchetype;
+        primaryArchetype.textContent = archetype?.name || 'Unknown';
+      }
+    } else {
+      brandPreview.classList.add('hidden');
+    }
+  }
+
+  async toggleAnalysis() {
+    if (!this.currentTab) {
+      this.showNotification('No active tab found', 'error');
+      return;
+    }
+
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    
+    try {
+      if (this.isAnalysisActive) {
+        // Stop analysis
+        await this.sendMessageToTab('stopAnalysis');
+        this.isAnalysisActive = false;
+        this.showNotification('Analysis stopped');
+      } else {
+        // Start analysis
+        analyzeBtn.innerHTML = 'Starting... <span class="loading-spinner"></span>';
+        analyzeBtn.disabled = true;
+        
+        await this.sendMessageToTab('startAnalysis');
+        this.isAnalysisActive = true;
+        
+        // Get analysis results
+        setTimeout(async () => {
+          await this.refreshAnalysisData();
+        }, 2000);
+        
+        this.showNotification('Brand analysis started');
+      }
+    } catch (error) {
+      console.error('Analysis toggle failed:', error);
+      this.showNotification('Analysis failed to start', 'error');
+    } finally {
+      if (analyzeBtn) {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = this.isAnalysisActive ? 'Stop Analysis' : 'Start Brand Analysis';
+      }
+    }
+
+    this.updateStatus();
+  }
+
+  async togglePanel() {
+    if (!this.currentTab) return;
+
+    try {
+      if (this.isAnalysisActive) {
+        await this.sendMessageToTab('showPanel');
+        this.showNotification('Analysis panel shown');
+      } else {
+        await this.sendMessageToTab('hidePanel');
+        this.showNotification('Analysis panel hidden');
+      }
+    } catch (error) {
+      console.error('Panel toggle failed:', error);
+    }
+  }
+
+  async exportReport() {
+    if (!this.analysisData) {
+      this.showNotification('No analysis data to export', 'error');
+      return;
+    }
+
+    try {
+      const report = {
+        url: this.currentTab?.url || 'unknown',
+        timestamp: new Date().toISOString(),
+        domain: this.currentTab?.url ? new URL(this.currentTab.url).hostname : 'unknown',
+        analysis: this.analysisData,
+        summary: {
+          overallScore: this.calculateOverallScore(this.analysisData),
+          primaryArchetype: this.analysisData.archetypes?.primaryArchetype?.name || 'Unknown',
+          dominantTone: this.analysisData.tone?.dominantTone || 'Unknown',
+          brandPersonality: this.analysisData.tone?.brandPersonality || 'Unknown'
+        }
+      };
+
+      // Create and download file
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const filename = `xclv-brand-analysis-${Date.now()}.json`;
+      
+      // Use Chrome downloads API
+      chrome.downloads.download({
+        url: url,
+        filename: filename,
+        saveAs: true
+      });
+
+      this.showNotification('Report exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      this.showNotification('Export failed', 'error');
+    }
+  }
+
+  async toggleSetting(settingName) {
+    this.settings[settingName] = !this.settings[settingName];
+    await this.saveSettings();
+    this.updateSettingsToggles();
+    
+    // Apply setting changes to content script
+    if (this.currentTab) {
+      await this.sendMessageToTab('updateSettings', this.settings);
+    }
+    
+    this.showNotification(`${this.getSettingDisplayName(settingName)} ${this.settings[settingName] ? 'enabled' : 'disabled'}`);
+  }
+
+  getSettingDisplayName(settingName) {
+    const names = {
+      realtimeAnalysis: 'Real-time Analysis',
+      hoverInsights: 'Hover Insights',
+      liveScoreboard: 'Live Scoreboard'
+    };
+    return names[settingName] || settingName;
+  }
+
+  async sendMessageToTab(action, data = null) {
+    if (!this.currentTab) return;
+
+    return new Promise((resolve) => {
+      chrome.tabs.sendMessage(this.currentTab.id, { action, data }, (response) => {
+        resolve(response);
+      });
+    });
+  }
+
+  async checkAnalysisStatus() {
+    if (!this.currentTab) return;
+
+    try {
+      // Check if analysis is currently active
+      const response = await this.sendMessageToTab('getStatus');
+      if (response?.isActive) {
+        this.isAnalysisActive = true;
+        this.analysisData = response.data;
+        this.updateUI();
+      }
+    } catch (error) {
+      console.error('Status check failed:', error);
+    }
+  }
+
+  async refreshAnalysisData() {
+    if (!this.currentTab) return;
+
+    try {
+      const response = await this.sendMessageToTab('getAnalysisData');
+      if (response?.data) {
+        this.analysisData = response.data;
+        this.updateUI();
+        
+        // Enable export button
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+          exportBtn.disabled = false;
+        }
+      }
+    } catch (error) {
+      console.error('Data refresh failed:', error);
+    }
+  }
+
+  calculateOverallScore(data) {
+    if (!data) return 0;
+
+    let score = 70; // Base score
+    
+    if (data.tone && data.tone.scores) {
+      const toneScores = Object.values(data.tone.scores);
+      const toneAvg = toneScores.reduce((a, b) => a + b, 0) / toneScores.length;
+      score = Math.round(toneAvg);
+    }
+
+    return Math.max(0, Math.min(100, score));
+  }
+
+  countPageElements(data) {
+    let count = 0;
+    
+    if (data.headlines) count += data.headlines.length;
+    if (data.ctas) count += data.ctas.length;
+    if (data.navigation) count += data.navigation.length;
+    
+    return count;
+  }
+
+  calculateClarityAverage(data) {
+    if (!data.tone || !data.tone.scores) return 0;
+    
+    // Use formality and authenticity as clarity indicators
+    const clarity = (data.tone.scores.formality + data.tone.scores.authenticity) / 2;
+    return Math.round(clarity);
+  }
+
+  generateBrandPreview(data) {
+    const parts = [];
+    
+    if (data.tone?.dominantTone) {
+      parts.push(`Tone: ${data.tone.dominantTone}`);
+    }
+    
+    if (data.tone?.brandPersonality) {
+      parts.push(`Personality: ${data.tone.brandPersonality}`);
+    }
+    
+    if (data.archetypes?.archetypeAlignment) {
+      parts.push(`Alignment: ${data.archetypes.archetypeAlignment}`);
+    }
+    
+    return parts.length > 0 ? parts.join('. ') : 'Analysis in progress...';
+  }
+
+  openHelp() {
+    chrome.tabs.create({
+      url: 'https://docs.xclv.ai/brand-analysis-extension'
+    });
+  }
+
+  openSettings() {
+    chrome.runtime.openOptionsPage();
+  }
+
+  openAbout() {
+    chrome.tabs.create({
+      url: 'https://xclv.ai/about'
+    });
+  }
+
+  showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    if (!notification) return;
+
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.add('show');
+
+    setTimeout(() => {
+      notification.classList.remove('show');
+    }, 3000);
+  }
+}
+
+// Utility functions for background page communication
+class BackgroundAPI {
+  static async getStoredAnalysis(url) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([`analysis_${url}`], (result) => {
+        resolve(result[`analysis_${url}`] || null);
+      });
+    });
+  }
+
+  static async storeAnalysis(url, data) {
+    const key = `analysis_${url}`;
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ [key]: data }, resolve);
+    });
+  }
+
+  static async clearStoredAnalyses() {
+    return new Promise((resolve) => {
+      chrome.storage.local.clear(resolve);
+    });
+  }
+}
+
+// Tab visibility handling
+class TabVisibilityManager {
+  constructor(popupController) {
+    this.popupController = popupController;
+    this.setupVisibilityHandlers();
+  }
+
+  setupVisibilityHandlers() {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Popup became visible, refresh data
+        this.popupController.refreshAnalysisData();
+      }
+    });
+
+    // Also refresh when popup is opened
+    window.addEventListener('focus', () => {
+      this.popupController.refreshAnalysisData();
+    });
+  }
+}
+
+// Keyboard shortcuts
+class KeyboardShortcuts {
+  constructor(popupController) {
+    this.popupController = popupController;
+    this.setupShortcuts();
+  }
+
+  setupShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Alt + A: Toggle analysis
+      if (e.altKey && e.key === 'a') {
+        e.preventDefault();
+        this.popupController.toggleAnalysis();
+      }
+
+      // Alt + P: Toggle panel
+      if (e.altKey && e.key === 'p') {
+        e.preventDefault();
+        this.popupController.togglePanel();
+      }
+
+      // Alt + E: Export report
+      if (e.altKey && e.key === 'e') {
+        e.preventDefault();
+        this.popupController.exportReport();
+      }
+
+      // Escape: Close popup
+      if (e.key === 'Escape') {
+        window.close();
+      }
+    });
+  }
+}
+
+// Initialize popup when DOM is ready
+document.addEventListener('DOMContentLoaded', async () => {
+  const popupController = new PopupController();
+  await popupController.initialize();
+
+  // Initialize additional managers
+  new TabVisibilityManager(popupController);
+  new KeyboardShortcuts(popupController);
+
+  // Auto-refresh data every 30 seconds if analysis is active
+  setInterval(() => {
+    if (popupController.isAnalysisActive) {
+      popupController.refreshAnalysisData();
+    }
+  }, 30000);
+});
+
+// Handle popup close
+window.addEventListener('beforeunload', () => {
+  // Save any pending state changes
+  console.log('XCLV popup closing');
+});
