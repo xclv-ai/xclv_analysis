@@ -1,4 +1,5 @@
-// XCLV Brand Analysis - Enhanced Popup with Interactive Mode
+// XCLV Brand Analysis - Fixed Popup Controller
+// Matches the actual HTML IDs and elements
 
 class XCLVPopupController {
   constructor() {
@@ -6,6 +7,8 @@ class XCLVPopupController {
     this.isInteractiveMode = false;
     this.currentTab = null;
     this.analysisData = null;
+    this.apiKey = null;
+    this.selectedModel = 'gemini-2.5-flash';
   }
 
   async initialize() {
@@ -35,6 +38,9 @@ class XCLVPopupController {
         interactiveMode: false
       };
       
+      this.apiKey = result.geminiApiKey;
+      this.selectedModel = result.selectedModel || 'gemini-2.5-flash';
+      
       this.updateUI();
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -42,525 +48,52 @@ class XCLVPopupController {
   }
 
   setupEventListeners() {
-    // Main action buttons
-    const startBtn = document.getElementById('startAnalysis');
-    const stopBtn = document.getElementById('stopAnalysis');
-    const showPanelBtn = document.getElementById('showPanel');
-    const exportBtn = document.getElementById('exportReport');
-    
-    // Interactive mode controls
-    const interactiveModeToggle = document.getElementById('interactiveMode');
-    const debugConsoleBtn = document.getElementById('debugConsole');
-    
-    // Settings toggles
-    const realtimeToggle = document.getElementById('realtimeAnalysis');
-    const hoverToggle = document.getElementById('hoverInsights');
-    const scoreboardToggle = document.getElementById('liveScoreboard');
+    // Main action buttons - using correct IDs from HTML
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const interactiveModeBtn = document.getElementById('interactiveModeBtn');
+    const togglePanelBtn = document.getElementById('togglePanelBtn');
+    const exportBtn = document.getElementById('exportBtn');
     
     // API Configuration
-    const testApiBtn = document.getElementById('testApi');
-    const saveSettingsBtn = document.getElementById('saveSettings');
+    const saveApiBtn = document.getElementById('saveApiBtn');
+    const testApiBtn = document.getElementById('testApiBtn');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const modelSelect = document.getElementById('modelSelect');
     
-    if (startBtn) {
-      startBtn.addEventListener('click', () => this.startAnalysis());
+    // Settings toggles
+    const realtimeToggle = document.getElementById('realtimeToggle');
+    const hoverToggle = document.getElementById('hoverToggle');
+    const scoreboardToggle = document.getElementById('scoreboardToggle');
+    
+    // Links
+    const apiKeyLink = document.getElementById('apiKeyLink');
+    
+    if (analyzeBtn) {
+      analyzeBtn.addEventListener('click', () => this.toggleAnalysis());
     }
     
-    if (stopBtn) {
-      stopBtn.addEventListener('click', () => this.stopAnalysis());
+    if (interactiveModeBtn) {
+      interactiveModeBtn.addEventListener('click', () => this.toggleInteractiveMode());
     }
     
-    if (showPanelBtn) {
-      showPanelBtn.addEventListener('click', () => this.showPanel());
+    if (togglePanelBtn) {
+      togglePanelBtn.addEventListener('click', () => this.showPanel());
     }
     
     if (exportBtn) {
       exportBtn.addEventListener('click', () => this.exportReport());
     }
     
-    if (interactiveModeToggle) {
-      interactiveModeToggle.addEventListener('change', (e) => {
-        this.toggleInteractiveMode(e.target.checked);
-      });
-    }
-    
-    if (debugConsoleBtn) {
-      debugConsoleBtn.addEventListener('click', () => this.openDebugConsole());
-    }
-    
-    if (realtimeToggle) {
-      realtimeToggle.addEventListener('change', (e) => {
-        this.updateSetting('realtimeAnalysis', e.target.checked);
-      });
-    }
-    
-    if (hoverToggle) {
-      hoverToggle.addEventListener('change', (e) => {
-        this.updateSetting('hoverInsights', e.target.checked);
-      });
-    }
-    
-    if (scoreboardToggle) {
-      scoreboardToggle.addEventListener('change', (e) => {
-        this.updateSetting('liveScoreboard', e.target.checked);
-      });
+    if (saveApiBtn) {
+      saveApiBtn.addEventListener('click', () => this.saveApiSettings());
     }
     
     if (testApiBtn) {
       testApiBtn.addEventListener('click', () => this.testApiConnection());
     }
     
-    if (saveSettingsBtn) {
-      saveSettingsBtn.addEventListener('click', () => this.saveSettings());
-    }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        window.close();
-      }
-    });
-  }
-
-  updateUI() {
-    // Update toggle states
-    const interactiveModeToggle = document.getElementById('interactiveMode');
-    const realtimeToggle = document.getElementById('realtimeAnalysis');
-    const hoverToggle = document.getElementById('hoverInsights');
-    const scoreboardToggle = document.getElementById('liveScoreboard');
-    
-    if (interactiveModeToggle) {
-      interactiveModeToggle.checked = this.settings.interactiveMode;
-    }
-    
-    if (realtimeToggle) {
-      realtimeToggle.checked = this.settings.realtimeAnalysis;
-    }
-    
-    if (hoverToggle) {
-      hoverToggle.checked = this.settings.hoverInsights;
-    }
-    
-    if (scoreboardToggle) {
-      scoreboardToggle.checked = this.settings.liveScoreboard;
-    }
-    
-    // Update interactive mode status
-    this.updateInteractiveModeStatus();
-  }
-
-  updateInteractiveModeStatus() {
-    const statusElement = document.getElementById('interactiveModeStatus');
-    const instructionsElement = document.getElementById('interactiveInstructions');
-    
-    if (statusElement) {
-      statusElement.textContent = this.isInteractiveMode ? 'ACTIVE' : 'INACTIVE';
-      statusElement.className = `status ${this.isInteractiveMode ? 'active' : 'inactive'}`;
-    }
-    
-    if (instructionsElement) {
-      instructionsElement.style.display = this.isInteractiveMode ? 'block' : 'none';
-    }
-  }
-
-  async toggleInteractiveMode(enabled) {
-    try {
-      this.isInteractiveMode = enabled;
-      
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      if (enabled) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'enableInteractiveMode' });
-        this.showSuccess('Interactive analysis mode enabled! Hover over text elements to analyze.');
-      } else {
-        await chrome.tabs.sendMessage(tab.id, { action: 'disableInteractiveMode' });
-        this.showSuccess('Interactive analysis mode disabled.');
-      }
-      
-      await this.updateSetting('interactiveMode', enabled);
-      this.updateInteractiveModeStatus();
-      
-    } catch (error) {
-      console.error('Failed to toggle interactive mode:', error);
-      this.showError('Failed to toggle interactive mode: ' + error.message);
-      
-      // Reset toggle if failed
-      const toggle = document.getElementById('interactiveMode');
-      if (toggle) {
-        toggle.checked = !enabled;
-      }
-    }
-  }
-
-  async openDebugConsole() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      // Execute debug console script
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          // Create debug console if it doesn't exist
-          if (!window.xclvDebugConsole) {
-            window.xclvDebugConsole = {
-              log: (...args) => {
-                console.log('%c[XCLV DEBUG]', 'color: #4CAF50; font-weight: bold;', ...args);
-              },
-              extractContent: () => {
-                if (window.xclvController && window.xclvController.extractor) {
-                  return window.xclvController.extractor.extractPageContent();
-                }
-                return null;
-              },
-              getAnalysisData: () => {
-                if (window.xclvController && window.xclvController.extractor) {
-                  return window.xclvController.extractor.analysisData;
-                }
-                return null;
-              },
-              testAnalysis: (text) => {
-                if (window.xclvController) {
-                  return window.xclvController.interactiveAnalyzer.analyzeElement({
-                    textContent: text || 'Test analysis text'
-                  });
-                }
-                return null;
-              }
-            };
-          }
-          
-          window.xclvDebugConsole.log('XCLV Debug Console initialized');
-          window.xclvDebugConsole.log('Available commands:');
-          window.xclvDebugConsole.log('- xclvDebugConsole.extractContent(): Extract page content');
-          window.xclvDebugConsole.log('- xclvDebugConsole.getAnalysisData(): Get current analysis');
-          window.xclvDebugConsole.log('- xclvDebugConsole.testAnalysis(text): Test analysis function');
-          
-          alert('XCLV Debug Console opened in browser console.\nPress F12 to open DevTools and use xclvDebugConsole commands.');
-        }
-      });
-      
-      this.showSuccess('Debug console opened in browser DevTools (F12)');
-      
-    } catch (error) {
-      console.error('Failed to open debug console:', error);
-      this.showError('Failed to open debug console: ' + error.message);
-    }
-  }
-
-  async startAnalysis() {
-    if (this.isAnalyzing) return;
-    
-    try {
-      this.setAnalyzing(true);
-      
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'startAnalysis'
-      });
-      
-      if (response && response.success) {
-        this.analysisData = response.data;
-        this.showSuccess('Analysis completed successfully!');
-        await this.updateAnalysisDisplay(response.data);
-      } else {
-        throw new Error(response?.error || 'Analysis failed');
-      }
-      
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      this.showError('Analysis failed: ' + error.message);
-    } finally {
-      this.setAnalyzing(false);
-    }
-  }
-
-  async stopAnalysis() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'stopAnalysis'
-      });
-      
-      this.setAnalyzing(false);
-      this.analysisData = null;
-      this.showSuccess('Analysis stopped');
-      
-    } catch (error) {
-      console.error('Failed to stop analysis:', error);
-      this.showError('Failed to stop analysis: ' + error.message);
-    }
-  }
-
-  async showPanel() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'showPanel'
-      });
-      
-      this.showSuccess('Analysis panel shown');
-      
-    } catch (error) {
-      console.error('Failed to show panel:', error);
-      this.showError('Failed to show panel: ' + error.message);
-    }
-  }
-
-  async exportReport() {
-    if (!this.analysisData) {
-      this.showError('No analysis data to export. Run analysis first.');
-      return;
-    }
-    
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const reportData = {
-        ...this.analysisData,
-        exportedAt: new Date().toISOString(),
-        url: tab.url,
-        title: tab.title
-      };
-      
-      const blob = new Blob([JSON.stringify(reportData, null, 2)], {
-        type: 'application/json'
-      });
-      
-      const url = URL.createObjectURL(blob);
-      const filename = `xclv-analysis-${new Date().toISOString().split('T')[0]}.json`;
-      
-      await chrome.downloads.download({
-        url: url,
-        filename: filename,
-        saveAs: true
-      });
-      
-      this.showSuccess('Report exported successfully!');
-      
-    } catch (error) {
-      console.error('Failed to export report:', error);
-      this.showError('Failed to export report: ' + error.message);
-    }
-  }
-
-  async testApiConnection() {
-    try {
-      const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
-      
-      if (!result.geminiApiKey) {
-        this.showError('Please configure your Gemini API key first');
-        return;
-      }
-      
-      this.setTesting(true);
-      
-      const response = await chrome.runtime.sendMessage({
-        action: 'testApiConnection'
-      });
-      
-      if (response && response.success) {
-        this.showSuccess('API connection successful!');
-      } else {
-        throw new Error(response?.error || 'API test failed');
-      }
-      
-    } catch (error) {
-      console.error('API test failed:', error);
-      this.showError('API test failed: ' + error.message);
-    } finally {
-      this.setTesting(false);
-    }
-  }
-
-  async saveSettings() {
-    try {
-      const apiKey = document.getElementById('geminiApiKey')?.value;
-      const model = document.getElementById('selectedModel')?.value;
-      
-      if (apiKey) {
-        await chrome.storage.local.set({ 
-          geminiApiKey: apiKey,
-          selectedModel: model || 'gemini-2.5-flash'
-        });
-      }
-      
-      await chrome.storage.local.set({ xclvSettings: this.settings });
-      
-      this.showSuccess('Settings saved successfully!');
-      
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      this.showError('Failed to save settings: ' + error.message);
-    }
-  }
-
-  async updateSetting(key, value) {
-    this.settings[key] = value;
-    
-    try {
-      // Save to storage
-      await chrome.storage.local.set({ xclvSettings: this.settings });
-      
-      // Send to content script
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'updateSettings',
-        data: { [key]: value }
-      });
-      
-    } catch (error) {
-      console.error('Failed to update setting:', error);
-    }
-  }
-
-  async updateStatus() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: 'getStatus'
-      });
-      
-      if (response) {
-        this.isAnalyzing = response.isActive || false;
-        this.analysisData = response.data || null;
-        
-        if (this.analysisData) {
-          await this.updateAnalysisDisplay(this.analysisData);
-        }
-      }
-      
-      this.updateButtonStates();
-      
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-  }
-
-  async updateAnalysisDisplay(data) {
-    const resultsContainer = document.getElementById('analysisResults');
-    if (!resultsContainer || !data) return;
-    
-    try {
-      let html = '<div class="analysis-summary">';
-      
-      // Overall Score
-      if (data.tone && data.tone.scores) {
-        const scores = Object.values(data.tone.scores);
-        const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-        
-        html += `
-          <div class="score-display">
-            <div class="score-number">${avgScore}</div>
-            <div class="score-label">Brand Score</div>
-          </div>
-        `;
-      }
-      
-      // Key Insights
-      html += '<div class="key-insights">';
-      
-      if (data.tone && data.tone.dominantTone) {
-        html += `<div class="insight"><strong>Tone:</strong> ${data.tone.dominantTone}</div>`;
-      }
-      
-      if (data.archetypes && data.archetypes.primaryArchetype) {
-        html += `<div class="insight"><strong>Archetype:</strong> ${data.archetypes.primaryArchetype.name}</div>`;
-      }
-      
-      if (data.tone && data.tone.brandPersonality) {
-        html += `<div class="insight"><strong>Personality:</strong> ${data.tone.brandPersonality}</div>`;
-      }
-      
-      html += '</div></div>';
-      
-      resultsContainer.innerHTML = html;
-      resultsContainer.style.display = 'block';
-      
-    } catch (error) {
-      console.error('Failed to update analysis display:', error);
-    }
-  }
-
-  setAnalyzing(analyzing) {
-    this.isAnalyzing = analyzing;
-    this.updateButtonStates();
-  }
-
-  setTesting(testing) {
-    const testBtn = document.getElementById('testApi');
-    if (testBtn) {
-      testBtn.disabled = testing;
-      testBtn.textContent = testing ? 'Testing...' : 'Test API';
-    }
-  }
-
-  updateButtonStates() {
-    const startBtn = document.getElementById('startAnalysis');
-    const stopBtn = document.getElementById('stopAnalysis');
-    const showPanelBtn = document.getElementById('showPanel');
-    const exportBtn = document.getElementById('exportReport');
-    
-    if (startBtn) {
-      startBtn.disabled = this.isAnalyzing;
-      startBtn.textContent = this.isAnalyzing ? 'Analyzing...' : 'Start Analysis';
-    }
-    
-    if (stopBtn) {
-      stopBtn.disabled = !this.isAnalyzing;
-    }
-    
-    if (showPanelBtn) {
-      showPanelBtn.disabled = !this.analysisData;
-    }
-    
-    if (exportBtn) {
-      exportBtn.disabled = !this.analysisData;
-    }
-  }
-
-  showSuccess(message) {
-    this.showMessage(message, 'success');
-  }
-
-  showError(message) {
-    this.showMessage(message, 'error');
-  }
-
-  showMessage(message, type) {
-    const messageContainer = document.getElementById('messageContainer') || 
-                           document.querySelector('.message-container');
-    
-    if (messageContainer) {
-      messageContainer.innerHTML = `
-        <div class="message ${type}">
-          ${message}
-        </div>
-      `;
-      
-      setTimeout(() => {
-        messageContainer.innerHTML = '';
-      }, 3000);
-    } else {
-      // Fallback to console
-      console.log(`XCLV ${type.toUpperCase()}: ${message}`);
-    }
-  }
-}
-
-// Initialize popup controller
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const controller = new XCLVPopupController();
-    await controller.initialize();
-    
-    // Make controller globally available for debugging
-    window.xclvPopupController = controller;
-    
-  } catch (error) {
-    console.error('Failed to initialize XCLV popup:', error);
-  }
-});
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener('input', () => this.validateApiKey());
+      apiKeyInput.addEventListener('paste', () => {
+        setTimeout(() => this.validateApiKey(), 100);
+      });\n    }\n    \n    if (modelSelect) {\n      modelSelect.addEventListener('change', () => this.updateModelInfo());\n    }\n    \n    if (realtimeToggle) {\n      realtimeToggle.addEventListener('click', () => {\n        this.toggleSetting('realtimeAnalysis', realtimeToggle);\n      });\n    }\n    \n    if (hoverToggle) {\n      hoverToggle.addEventListener('click', () => {\n        this.toggleSetting('hoverInsights', hoverToggle);\n      });\n    }\n    \n    if (scoreboardToggle) {\n      scoreboardToggle.addEventListener('click', () => {\n        this.toggleSetting('liveScoreboard', scoreboardToggle);\n      });\n    }\n    \n    if (apiKeyLink) {\n      apiKeyLink.addEventListener('click', (e) => {\n        e.preventDefault();\n        chrome.tabs.create({ url: 'https://aistudio.google.com/app/apikey' });\n      });\n    }\n    \n    // Keyboard shortcuts\n    document.addEventListener('keydown', (e) => {\n      if (e.key === 'Escape') {\n        window.close();\n      }\n    });\n  }\n\n  updateUI() {\n    // Update API configuration\n    const apiKeyInput = document.getElementById('apiKeyInput');\n    const modelSelect = document.getElementById('modelSelect');\n    const apiSetup = document.getElementById('apiSetup');\n    const apiStatusText = document.getElementById('apiStatusText');\n    \n    if (apiKeyInput && this.apiKey) {\n      apiKeyInput.value = this.apiKey;\n    }\n    \n    if (modelSelect) {\n      modelSelect.value = this.selectedModel;\n    }\n    \n    if (apiSetup && apiStatusText) {\n      if (this.apiKey) {\n        apiSetup.classList.add('configured');\n        apiStatusText.textContent = 'Gemini 2.5 API configured and ready';\n      } else {\n        apiSetup.classList.remove('configured');\n        apiStatusText.textContent = 'Configure Gemini 2.5 API to enable brand analysis';\n      }\n    }\n    \n    // Update toggle states\n    this.updateToggleState('realtimeToggle', this.settings.realtimeAnalysis);\n    this.updateToggleState('hoverToggle', this.settings.hoverInsights);\n    this.updateToggleState('scoreboardToggle', this.settings.liveScoreboard);\n    \n    // Update button states\n    this.updateButtonStates();\n    this.updateModelInfo();\n  }\n\n  updateToggleState(toggleId, isActive) {\n    const toggle = document.getElementById(toggleId);\n    if (toggle) {\n      if (isActive) {\n        toggle.classList.add('active');\n      } else {\n        toggle.classList.remove('active');\n      }\n    }\n  }\n\n  validateApiKey() {\n    const apiKeyInput = document.getElementById('apiKeyInput');\n    const testApiBtn = document.getElementById('testApiBtn');\n    const keyValidation = document.getElementById('keyValidation');\n    \n    if (!apiKeyInput) return;\n    \n    const key = apiKeyInput.value.trim();\n    \n    if (key.length === 0) {\n      if (testApiBtn) testApiBtn.disabled = true;\n      if (keyValidation) {\n        keyValidation.classList.add('hidden');\n      }\n      return;\n    }\n    \n    if (key.length < 20) {\n      if (testApiBtn) testApiBtn.disabled = true;\n      if (keyValidation) {\n        keyValidation.textContent = 'API key appears too short';\n        keyValidation.className = 'validation-message validation-error';\n      }\n    } else {\n      if (testApiBtn) testApiBtn.disabled = false;\n      if (keyValidation) {\n        keyValidation.textContent = 'API key format looks valid';\n        keyValidation.className = 'validation-message validation-success';\n      }\n    }\n  }\n\n  updateModelInfo() {\n    const modelSelect = document.getElementById('modelSelect');\n    const modelInfo = document.getElementById('modelInfo');\n    const costEstimate = document.getElementById('costEstimate');\n    \n    if (!modelSelect) return;\n    \n    const model = modelSelect.value;\n    \n    const modelData = {\n      'gemini-2.5-flash': {\n        info: 'Latest AI model with enhanced reasoning and speed',\n        cost: '$0.005-0.02 per analysis'\n      },\n      'gemini-2.5-flash-lite': {\n        info: 'Fastest model optimized for real-time analysis',\n        cost: '$0.001-0.01 per analysis'\n      },\n      'gemini-2.5-pro': {\n        info: 'Most advanced model for complex brand analysis',\n        cost: '$0.02-0.08 per analysis'\n      }\n    };\n    \n    if (modelInfo) {\n      modelInfo.textContent = modelData[model]?.info || 'AI model for brand analysis';\n    }\n    \n    if (costEstimate) {\n      costEstimate.textContent = `Estimated cost: ${modelData[model]?.cost || '$0.005-0.02 per analysis'}`;\n    }\n  }\n\n  async toggleAnalysis() {\n    if (!this.apiKey) {\n      this.showError('Please configure your Gemini API key first');\n      return;\n    }\n    \n    if (this.isAnalyzing) {\n      await this.stopAnalysis();\n    } else {\n      await this.startAnalysis();\n    }\n  }\n\n  async toggleInteractiveMode() {\n    try {\n      this.isInteractiveMode = !this.isInteractiveMode;\n      \n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      if (this.isInteractiveMode) {\n        await chrome.tabs.sendMessage(tab.id, { action: 'enableInteractiveMode' });\n        this.showSuccess('Interactive analysis mode enabled! Hover over text elements.');\n      } else {\n        await chrome.tabs.sendMessage(tab.id, { action: 'disableInteractiveMode' });\n        this.showSuccess('Interactive analysis mode disabled.');\n      }\n      \n      await this.updateSetting('interactiveMode', this.isInteractiveMode);\n      this.updateInteractiveModeUI();\n      \n    } catch (error) {\n      console.error('Failed to toggle interactive mode:', error);\n      this.showError('Failed to toggle interactive mode');\n      this.isInteractiveMode = !this.isInteractiveMode; // Revert\n    }\n  }\n\n  updateInteractiveModeUI() {\n    const interactiveModeBtn = document.getElementById('interactiveModeBtn');\n    const interactiveModeInfo = document.getElementById('interactiveModeInfo');\n    \n    if (interactiveModeBtn) {\n      if (this.isInteractiveMode) {\n        interactiveModeBtn.textContent = '🎯 Disable Interactive Mode';\n        interactiveModeBtn.classList.add('active');\n      } else {\n        interactiveModeBtn.textContent = '🎯 Enable Interactive Mode';\n        interactiveModeBtn.classList.remove('active');\n      }\n    }\n    \n    if (interactiveModeInfo) {\n      if (this.isInteractiveMode) {\n        interactiveModeInfo.classList.remove('hidden');\n        interactiveModeInfo.classList.add('active');\n      } else {\n        interactiveModeInfo.classList.add('hidden');\n        interactiveModeInfo.classList.remove('active');\n      }\n    }\n  }\n\n  async startAnalysis() {\n    if (this.isAnalyzing) return;\n    \n    try {\n      this.setAnalyzing(true);\n      \n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      const response = await chrome.tabs.sendMessage(tab.id, {\n        action: 'startAnalysis'\n      });\n      \n      if (response && response.success) {\n        this.analysisData = response.data;\n        this.showSuccess('Analysis completed successfully!');\n        await this.updateAnalysisDisplay(response.data);\n      } else {\n        throw new Error(response?.error || 'Analysis failed');\n      }\n      \n    } catch (error) {\n      console.error('Analysis failed:', error);\n      this.showError('Analysis failed: ' + error.message);\n    } finally {\n      this.setAnalyzing(false);\n    }\n  }\n\n  async stopAnalysis() {\n    try {\n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      await chrome.tabs.sendMessage(tab.id, {\n        action: 'stopAnalysis'\n      });\n      \n      this.setAnalyzing(false);\n      this.analysisData = null;\n      this.showSuccess('Analysis stopped');\n      this.updateAnalysisDisplay(null);\n      \n    } catch (error) {\n      console.error('Failed to stop analysis:', error);\n      this.showError('Failed to stop analysis');\n    }\n  }\n\n  async showPanel() {\n    try {\n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      await chrome.tabs.sendMessage(tab.id, {\n        action: 'showPanel'\n      });\n      \n      this.showSuccess('Analysis panel shown');\n      \n    } catch (error) {\n      console.error('Failed to show panel:', error);\n      this.showError('Failed to show panel');\n    }\n  }\n\n  async exportReport() {\n    if (!this.analysisData) {\n      this.showError('No analysis data to export. Run analysis first.');\n      return;\n    }\n    \n    try {\n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      const reportData = {\n        ...this.analysisData,\n        exportedAt: new Date().toISOString(),\n        url: tab.url,\n        title: tab.title\n      };\n      \n      const blob = new Blob([JSON.stringify(reportData, null, 2)], {\n        type: 'application/json'\n      });\n      \n      const url = URL.createObjectURL(blob);\n      const filename = `xclv-analysis-${new Date().toISOString().split('T')[0]}.json`;\n      \n      await chrome.downloads.download({\n        url: url,\n        filename: filename,\n        saveAs: true\n      });\n      \n      this.showSuccess('Report exported successfully!');\n      \n    } catch (error) {\n      console.error('Failed to export report:', error);\n      this.showError('Failed to export report');\n    }\n  }\n\n  async saveApiSettings() {\n    try {\n      const apiKeyInput = document.getElementById('apiKeyInput');\n      const modelSelect = document.getElementById('modelSelect');\n      \n      if (!apiKeyInput) {\n        this.showError('API key input not found');\n        return;\n      }\n      \n      const apiKey = apiKeyInput.value.trim();\n      const model = modelSelect ? modelSelect.value : 'gemini-2.5-flash';\n      \n      if (!apiKey) {\n        this.showError('Please enter a valid API key');\n        return;\n      }\n      \n      await chrome.storage.local.set({ \n        geminiApiKey: apiKey,\n        selectedModel: model\n      });\n      \n      this.apiKey = apiKey;\n      this.selectedModel = model;\n      \n      this.showSuccess('API settings saved successfully!');\n      this.updateUI();\n      \n    } catch (error) {\n      console.error('Failed to save API settings:', error);\n      this.showError('Failed to save API settings');\n    }\n  }\n\n  async testApiConnection() {\n    if (!this.apiKey) {\n      const apiKeyInput = document.getElementById('apiKeyInput');\n      if (apiKeyInput && apiKeyInput.value.trim()) {\n        this.apiKey = apiKeyInput.value.trim();\n      } else {\n        this.showError('Please enter an API key first');\n        return;\n      }\n    }\n    \n    try {\n      this.setTesting(true);\n      \n      const response = await chrome.runtime.sendMessage({\n        action: 'testApiConnection'\n      });\n      \n      if (response && response.success) {\n        this.showSuccess('API connection successful!');\n      } else {\n        throw new Error(response?.error || 'API test failed');\n      }\n      \n    } catch (error) {\n      console.error('API test failed:', error);\n      this.showError('API test failed: ' + error.message);\n    } finally {\n      this.setTesting(false);\n    }\n  }\n\n  async toggleSetting(key, toggleElement) {\n    const isActive = toggleElement.classList.contains('active');\n    const newValue = !isActive;\n    \n    this.settings[key] = newValue;\n    \n    if (newValue) {\n      toggleElement.classList.add('active');\n    } else {\n      toggleElement.classList.remove('active');\n    }\n    \n    try {\n      await chrome.storage.local.set({ xclvSettings: this.settings });\n      \n      // Send to content script\n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      await chrome.tabs.sendMessage(tab.id, {\n        action: 'updateSettings',\n        data: { [key]: newValue }\n      });\n      \n    } catch (error) {\n      console.error('Failed to update setting:', error);\n      // Revert toggle state on error\n      if (newValue) {\n        toggleElement.classList.remove('active');\n      } else {\n        toggleElement.classList.add('active');\n      }\n      this.settings[key] = !newValue;\n    }\n  }\n\n  async updateSetting(key, value) {\n    this.settings[key] = value;\n    \n    try {\n      await chrome.storage.local.set({ xclvSettings: this.settings });\n      \n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      await chrome.tabs.sendMessage(tab.id, {\n        action: 'updateSettings',\n        data: { [key]: value }\n      });\n      \n    } catch (error) {\n      console.error('Failed to update setting:', error);\n    }\n  }\n\n  async updateStatus() {\n    try {\n      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });\n      \n      const response = await chrome.tabs.sendMessage(tab.id, {\n        action: 'getStatus'\n      });\n      \n      if (response) {\n        this.isAnalyzing = response.isActive || false;\n        this.analysisData = response.data || null;\n        \n        if (this.analysisData) {\n          await this.updateAnalysisDisplay(this.analysisData);\n        }\n      }\n      \n    } catch (error) {\n      console.error('Failed to update status:', error);\n    }\n  }\n\n  updateAnalysisDisplay(data) {\n    const statusIndicator = document.getElementById('statusIndicator');\n    const statusText = document.getElementById('statusText');\n    const overallScore = document.getElementById('overallScore');\n    const brandPreview = document.getElementById('brandPreview');\n    const previewContent = document.getElementById('previewContent');\n    const primaryArchetype = document.getElementById('primaryArchetype');\n    \n    if (statusIndicator && statusText) {\n      if (this.isAnalyzing) {\n        statusIndicator.className = 'status-indicator active';\n        statusText.textContent = 'Analysis Active';\n      } else {\n        statusIndicator.className = 'status-indicator inactive';\n        statusText.textContent = 'Analysis Inactive';\n      }\n    }\n    \n    if (data) {\n      // Update overall score\n      if (overallScore && data.tone && data.tone.scores) {\n        const scores = Object.values(data.tone.scores);\n        const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);\n        overallScore.textContent = avgScore;\n      }\n      \n      // Update brand preview\n      if (brandPreview && previewContent) {\n        brandPreview.classList.remove('hidden');\n        \n        let content = '';\n        if (data.tone && data.tone.dominantTone) {\n          content += `Tone: ${data.tone.dominantTone}\\n`;\n        }\n        if (data.tone && data.tone.brandPersonality) {\n          content += `Personality: ${data.tone.brandPersonality}`;\n        }\n        \n        previewContent.textContent = content || 'Analysis completed';\n      }\n      \n      // Update primary archetype\n      if (primaryArchetype && data.archetypes && data.archetypes.primaryArchetype) {\n        primaryArchetype.textContent = data.archetypes.primaryArchetype.name;\n      }\n    } else {\n      // Clear data\n      if (overallScore) overallScore.textContent = '--';\n      if (brandPreview) brandPreview.classList.add('hidden');\n      if (primaryArchetype) primaryArchetype.textContent = 'Unknown';\n    }\n    \n    this.updateButtonStates();\n  }\n\n  setAnalyzing(analyzing) {\n    this.isAnalyzing = analyzing;\n    this.updateButtonStates();\n  }\n\n  setTesting(testing) {\n    const testApiBtn = document.getElementById('testApiBtn');\n    if (testApiBtn) {\n      testApiBtn.disabled = testing;\n      testApiBtn.textContent = testing ? 'Testing...' : 'Test';\n    }\n  }\n\n  updateButtonStates() {\n    const analyzeBtn = document.getElementById('analyzeBtn');\n    const togglePanelBtn = document.getElementById('togglePanelBtn');\n    const exportBtn = document.getElementById('exportBtn');\n    \n    if (analyzeBtn) {\n      if (!this.apiKey) {\n        analyzeBtn.disabled = true;\n        analyzeBtn.textContent = 'Configure API First';\n      } else if (this.isAnalyzing) {\n        analyzeBtn.disabled = false;\n        analyzeBtn.textContent = 'Stop Analysis';\n      } else {\n        analyzeBtn.disabled = false;\n        analyzeBtn.textContent = 'Start Analysis';\n      }\n    }\n    \n    if (togglePanelBtn) {\n      togglePanelBtn.disabled = !this.analysisData;\n    }\n    \n    if (exportBtn) {\n      exportBtn.disabled = !this.analysisData;\n    }\n  }\n\n  showSuccess(message) {\n    this.showMessage(message, 'success');\n  }\n\n  showError(message) {\n    this.showMessage(message, 'error');\n  }\n\n  showMessage(message, type) {\n    const notification = document.getElementById('notification');\n    \n    if (notification) {\n      notification.textContent = message;\n      notification.className = `notification ${type} show`;\n      \n      setTimeout(() => {\n        notification.classList.remove('show');\n      }, 3000);\n    } else {\n      console.log(`XCLV ${type.toUpperCase()}: ${message}`);\n    }\n  }\n}\n\n// Initialize popup controller\ndocument.addEventListener('DOMContentLoaded', async () => {\n  try {\n    const controller = new XCLVPopupController();\n    await controller.initialize();\n    \n    // Make controller globally available for debugging\n    window.xclvPopupController = controller;\n    \n  } catch (error) {\n    console.error('Failed to initialize XCLV popup:', error);\n  }\n});
