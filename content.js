@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Fixed Interactive Functionality v1.2.14
+// Click-to-Analyze Interactive Mode v1.2.15
 
 console.log('XCLV: Content script loading...');
 
@@ -180,7 +180,7 @@ class AnalysisPanel {
           <label class="xclv-toggle-container">
             <input type="checkbox" id="xclv-enable-hover" checked>
             <span class="xclv-toggle-slider"></span>
-            <span class="xclv-toggle-label">✨ Enable Hover Analysis</span>
+            <span class="xclv-toggle-label">✨ Click-to-Analyze Mode</span>
           </label>
           <label class="xclv-toggle-container">
             <input type="checkbox" id="xclv-disable-interactive">
@@ -193,7 +193,7 @@ class AnalysisPanel {
           <h4>Settings</h4>
           <label class="xclv-checkbox-container">
             <input type="checkbox" id="xclv-hover-insights" checked>
-            <span class="xclv-checkbox-label">Hover Insights</span>
+            <span class="xclv-checkbox-label">Show Element Outlines</span>
           </label>
         </div>
         
@@ -344,18 +344,19 @@ class AnalysisPanel {
   }
 }
 
-// Interactive Content Analyzer Class - ENHANCED WITH BETTER ELEMENT DETECTION
+// Interactive Content Analyzer Class - CLICK-TO-ANALYZE MODE
 class InteractiveContentAnalyzer {
   constructor() {
     this.isHoverMode = false;
     this.currentHoveredElement = null;
+    this.selectedElement = null; // NEW: Currently selected element
     this.analyzeButton = null;
     this.analysisOverlay = null;
     this.analysisCache = new Map();
     this.isAnalyzing = false;
-    this.debugMode = true; // Enable debug mode
+    this.debugMode = true;
     
-    console.log('XCLV: InteractiveContentAnalyzer initialized');
+    console.log('XCLV: InteractiveContentAnalyzer initialized with click-to-analyze mode');
   }
 
   enable() {
@@ -363,8 +364,8 @@ class InteractiveContentAnalyzer {
     
     this.isHoverMode = true;
     this.setupMouseEvents();
-    this.showModeNotification('Interactive mode enabled - hover over text elements');
-    console.log('XCLV: Interactive hover mode ENABLED');
+    this.showModeNotification('Click-to-analyze mode enabled - hover to highlight, click to select');
+    console.log('XCLV: Click-to-analyze hover mode ENABLED');
   }
 
   disable() {
@@ -391,7 +392,7 @@ class InteractiveContentAnalyzer {
     document.addEventListener('mouseout', this.boundMouseOut, true);
     document.addEventListener('click', this.boundClick, true);
     
-    console.log('XCLV: Mouse event listeners attached');
+    console.log('XCLV: Click-to-analyze mouse event listeners attached');
   }
 
   removeMouseEvents() {
@@ -414,13 +415,15 @@ class InteractiveContentAnalyzer {
     // Skip if hovering over XCLV elements
     if (this.isXCLVElement(element)) return;
     
-    // Check if element is analyzable - ENHANCED DETECTION
+    // Skip if this element is already selected (has analyze button)
+    if (element === this.selectedElement) return;
+    
+    // Check if element is analyzable
     if (this.isAnalyzableElement(element)) {
+      // Only highlight, don't show button yet
       this.highlightElement(element);
-      this.showAnalyzeButton(element, event);
       this.currentHoveredElement = element;
       
-      // Debug logging
       console.log('XCLV: Hovering over element:', {
         tag: element.tagName,
         text: element.textContent.trim().substring(0, 50) + '...',
@@ -443,21 +446,82 @@ class InteractiveContentAnalyzer {
       return;
     }
 
+    // Don't remove highlight if this is the selected element
+    if (element === this.selectedElement) return;
+
     if (element === this.currentHoveredElement) {
       this.removeHighlight(element);
-      this.hideAnalyzeButton();
       this.currentHoveredElement = null;
     }
   }
 
+  // NEW: Enhanced click handling for click-to-analyze mode
   handleClick(event) {
     // Handle analyze button clicks
     if (event.target.classList?.contains('xclv-analyze-btn-inline')) {
       event.preventDefault();
       event.stopPropagation();
-      this.analyzeElement(this.currentHoveredElement);
+      this.analyzeElement(this.selectedElement);
       return;
     }
+
+    // Handle element selection
+    if (!this.isHoverMode || this.isAnalyzing) return;
+
+    const element = event.target;
+    
+    // Skip if clicking on XCLV elements
+    if (this.isXCLVElement(element)) return;
+
+    // Check if element is analyzable
+    if (this.isAnalyzableElement(element)) {
+      
+      // If clicking on already selected element, deselect it
+      if (element === this.selectedElement) {
+        this.deselectElement();
+        return;
+      }
+
+      // If another element was selected, deselect it first
+      if (this.selectedElement) {
+        this.deselectElement();
+      }
+
+      // Select the new element
+      this.selectElement(element);
+      
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  // NEW: Select element and show analyze button
+  selectElement(element) {
+    this.selectedElement = element;
+    
+    // Add selection styling (different from hover)
+    element.classList.add('xclv-selected');
+    element.classList.remove('xclv-highlighted'); // Remove hover highlight
+    
+    // Show the analyze button attached to this element
+    this.showAnalyzeButton(element);
+    
+    console.log('XCLV: Element selected:', {
+      tag: element.tagName,
+      text: element.textContent.trim().substring(0, 50) + '...'
+    });
+  }
+
+  // NEW: Deselect element and hide analyze button
+  deselectElement() {
+    if (this.selectedElement) {
+      this.selectedElement.classList.remove('xclv-selected');
+      this.selectedElement = null;
+    }
+    
+    this.hideAnalyzeButton();
+    
+    console.log('XCLV: Element deselected');
   }
 
   isXCLVElement(element) {
@@ -465,10 +529,10 @@ class InteractiveContentAnalyzer {
            element.closest('.xclv-analyze-btn-inline') ||
            element.closest('.xclv-analysis-overlay') ||
            element.classList?.contains('xclv-highlighted') ||
+           element.classList?.contains('xclv-selected') ||
            element.id?.startsWith('xclv-');
   }
 
-  // ENHANCED ELEMENT DETECTION - Fixed to detect all text elements
   isAnalyzableElement(element) {
     // Skip non-text elements
     if (!element || !element.tagName) return false;
@@ -496,13 +560,11 @@ class InteractiveContentAnalyzer {
     // Check visibility
     if (!this.isElementVisible(element)) return false;
 
-    // Skip if already highlighted
-    if (element.classList.contains('xclv-highlighted')) return false;
-
     // Skip if it's a child of an already analyzable parent
     let parent = element.parentElement;
     while (parent && parent !== document.body) {
-      if (parent.classList?.contains('xclv-highlighted')) return false;
+      if (parent.classList?.contains('xclv-highlighted') || 
+          parent.classList?.contains('xclv-selected')) return false;
       parent = parent.parentElement;
     }
 
@@ -533,32 +595,34 @@ class InteractiveContentAnalyzer {
     }
   }
 
-  showAnalyzeButton(element, event) {
+  // UPDATED: Show analyze button that stays attached to selected element
+  showAnalyzeButton(element) {
     this.hideAnalyzeButton(); // Remove any existing button
 
     const rect = element.getBoundingClientRect();
     
     this.analyzeButton = document.createElement('button');
-    this.analyzeButton.className = 'xclv-analyze-btn-inline';
+    this.analyzeButton.className = 'xclv-analyze-btn-inline xclv-btn-selected';
     this.analyzeButton.innerHTML = '🔍 ANALYZE CONTENT';
-    this.analyzeButton.title = 'Click to analyze this text element';
+    this.analyzeButton.title = 'Click to analyze this selected text element';
     
     // Position the button next to the element
     this.analyzeButton.style.position = 'fixed';
     this.analyzeButton.style.left = `${rect.left}px`;
-    this.analyzeButton.style.top = `${rect.bottom + 5}px`;
+    this.analyzeButton.style.top = `${rect.bottom + 8}px`;
     this.analyzeButton.style.zIndex = '999999';
     
     // Ensure button stays in viewport
-    const buttonRect = this.analyzeButton.getBoundingClientRect();
-    if (rect.bottom + 40 > window.innerHeight) {
-      this.analyzeButton.style.top = `${rect.top - 35}px`;
+    if (rect.bottom + 50 > window.innerHeight) {
+      this.analyzeButton.style.top = `${rect.top - 40}px`;
     }
-    if (rect.left + 150 > window.innerWidth) {
-      this.analyzeButton.style.left = `${window.innerWidth - 160}px`;
+    if (rect.left + 160 > window.innerWidth) {
+      this.analyzeButton.style.left = `${window.innerWidth - 170}px`;
     }
     
     document.body.appendChild(this.analyzeButton);
+    
+    console.log('XCLV: Analyze button attached to selected element');
   }
 
   hideAnalyzeButton() {
@@ -608,7 +672,6 @@ class InteractiveContentAnalyzer {
     }
   }
 
-  // NEW: Debug Popup Function - Restored functionality
   showDebugPopup(element, text) {
     try {
       const debugData = {
@@ -737,7 +800,7 @@ class InteractiveContentAnalyzer {
     // Position overlay
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 55}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
@@ -760,7 +823,7 @@ class InteractiveContentAnalyzer {
     // Position overlay
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 55}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
@@ -827,7 +890,7 @@ class InteractiveContentAnalyzer {
     
     this.analysisOverlay.style.position = 'fixed';
     this.analysisOverlay.style.left = `${rect.left + window.scrollX}px`;
-    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 40}px`;
+    this.analysisOverlay.style.top = `${rect.bottom + window.scrollY + 55}px`;
     this.analysisOverlay.style.zIndex = '1000000';
     
     document.body.appendChild(this.analysisOverlay);
@@ -853,21 +916,29 @@ class InteractiveContentAnalyzer {
     setTimeout(() => {
       notification.style.animation = 'xclvSlideOutRight 0.3s ease';
       setTimeout(() => notification.remove(), 300);
-    }, 2500);
+    }, 3000);
   }
 
   cleanup() {
     this.hideAnalyzeButton();
     this.hideAnalysisOverlay();
     
+    if (this.selectedElement) {
+      this.deselectElement();
+    }
+    
     if (this.currentHoveredElement) {
       this.removeHighlight(this.currentHoveredElement);
       this.currentHoveredElement = null;
     }
     
-    // Remove any remaining highlights
+    // Remove any remaining highlights and selections
     document.querySelectorAll('.xclv-highlighted').forEach(el => {
       this.removeHighlight(el);
+    });
+    
+    document.querySelectorAll('.xclv-selected').forEach(el => {
+      el.classList.remove('xclv-selected');
     });
   }
 }
@@ -933,7 +1004,7 @@ class XCLVContentController {
           
         case 'enableInteractiveMode':
           this.interactiveAnalyzer.enable();
-          sendResponse({ success: true, message: 'Interactive mode activated - hover over text elements' });
+          sendResponse({ success: true, message: 'Click-to-analyze mode activated' });
           break;
           
         case 'disableInteractiveMode':
