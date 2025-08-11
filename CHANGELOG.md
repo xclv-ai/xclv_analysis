@@ -5,6 +5,40 @@ All notable changes to the XCLV Brand Analysis Extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-08-11
+
+### 🚀 Major Features
+- **NEW: Dynamic Prompt System** - Professional-grade prompts stored in separate .md files for easy maintenance
+- **NEW: Advanced Tone of Voice Analysis** - Nielsen Norman Group's Core Four Dimensions framework implementation
+- **NEW: Brand Archetype Analysis** - Complete Jung's 12 archetypes identification system
+- **NEW: Modular Prompt Architecture** - Extensible system supporting multiple analysis types
+
+### 📝 Prompt Library
+- **tone-of-voice-analysis.md** - Advanced ToV analysis with Feynman-style insights
+- **brand-archetype-analysis.md** - Comprehensive archetype identification system
+- **text-element-analysis.md** - Individual text element effectiveness evaluation
+- **comprehensive-brand-analysis.md** - Complete brand intelligence analysis
+
+### 🔧 Technical Improvements
+- **Enhanced Background Service** - Dynamic prompt loading with fallback system
+- **Improved API Response Parsing** - Better error handling for Gemini API responses
+- **Fixed Debug Interface Issues** - System prompts now properly stored and displayed
+- **Better Error Recovery** - Graceful handling of missing prompts or API failures
+
+### 🛡️ Reliability Enhancements
+- **Fallback Prompt System** - Built-in prompts when .md files can't be loaded
+- **Enhanced Error Messages** - More specific error reporting for debugging
+- **Improved Response Validation** - Better handling of malformed API responses
+- **Robust Initialization** - Multiple retry mechanisms for service startup
+
+### 🧪 Testing Requirements
+- Test prompt loading functionality
+- Verify fallback prompts work when files are missing
+- Confirm debug interface shows system prompts correctly
+- Validate all analysis types produce expected outputs
+
+---
+
 ## [1.2.4] - 2025-08-11
 
 ### 🔧 Critical Fixes
@@ -32,16 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error messages and user feedback
 - Enhanced debugging capabilities
 - Better separation of concerns in popup controller
-
-### 🚨 Breaking Changes
-- None - this is a stability release
-
-### 🧪 Testing Requirements
-- Manual test all popup buttons (Save, Test, toggles)
-- Verify API key saving and persistence
-- Test interactive mode enable/disable
-- Confirm error messages display correctly
-- Validate settings persistence across browser restarts
 
 ---
 
@@ -139,8 +163,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Version Numbering
 - **Major (X.0.0)**: Breaking changes, major feature additions
-- **Minor (1.X.0)**: New features, significant improvements
+- **Minor (1.X.0)**: New features, significant improvements, new prompt systems
 - **Patch (1.2.X)**: Bug fixes, minor improvements, stability updates
+
+### Prompt System Guidelines (NEW in v1.2.5)
+1. **Prompt Organization**: All prompts stored in `/prompts/*.md` files
+2. **Template Variables**: Use `{{variable}}` syntax for dynamic content
+3. **Fallback System**: Always include built-in prompts for critical functionality
+4. **Testing**: Verify both file-based and fallback prompts work correctly
+5. **Documentation**: Update prompt descriptions when adding new analysis types
 
 ### Code Quality Standards
 1. **JavaScript Validation**: All code must pass ESLint without errors
@@ -148,6 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. **Error Handling**: Comprehensive try-catch blocks required
 4. **User Feedback**: Clear success/error messages for all operations
 5. **Testing**: Manual testing required for all popup functionality
+6. **Prompt Testing**: Verify all prompt files load correctly
 
 ### Pre-Release Checklist
 - [ ] Test API key saving and validation
@@ -155,6 +187,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Check JavaScript console for errors
 - [ ] Test settings persistence
 - [ ] Validate background service communication
+- [ ] **NEW: Test prompt loading system**
+- [ ] **NEW: Verify fallback prompts work**
+- [ ] **NEW: Validate all analysis types**
 - [ ] Update version number in manifest.json
 - [ ] Update README.md with changes
 - [ ] Update CHANGELOG.md with new version
@@ -164,36 +199,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `manifest.json` - Version and permissions
 - `background.js` - API service and message handling
 - `content.js` - Page interaction and analysis
+- **NEW: `prompts/*.md`** - Analysis prompt definitions
 
-### Common Issues to Prevent
-1. **Escaped Characters**: Avoid `\\n` in JavaScript strings
-2. **Event Listeners**: Ensure all buttons have proper event handlers
-3. **API Validation**: Always validate API keys before saving
-4. **Error Messages**: Provide clear feedback for all user actions
-5. **Version Management**: Always update version numbers for releases
-
-### Emergency Fixes
-If critical issues are discovered:
-1. Create hotfix branch from main
-2. Fix only the critical issue
-3. Update patch version (1.2.X+1)
-4. Test thoroughly
-5. Update CHANGELOG.md
-6. Merge to main with clear commit message
+### Prompt Management Best Practices
+1. **File Naming**: Use kebab-case for prompt filenames
+2. **Template Variables**: Always validate variable substitution
+3. **Error Handling**: Graceful fallback when prompts fail to load
+4. **Performance**: Cache loaded prompts to avoid repeated file reads
+5. **Version Control**: Track prompt changes in CHANGELOG.md
 
 ---
 
 ## 📊 Version Statistics
 
-| Version | Release Date | Major Features | Bug Fixes | Breaking Changes |
-|---------|-------------|----------------|-----------|------------------|
-| 1.2.4   | 2025-08-11  | 0              | 5         | 0                |
-| 1.2.3   | 2025-08-10  | 1              | 0         | 0                |
-| 1.2.2   | 2025-08-09  | 0              | 3         | 0                |
-| 1.2.1   | 2025-08-08  | 0              | 3         | 0                |
-| 1.2.0   | 2025-08-07  | 4              | 0         | 0                |
-| 1.1.0   | 2025-08-05  | 4              | 0         | 0                |
-| 1.0.0   | 2025-08-01  | 6              | 0         | 0                |
+| Version | Release Date | Major Features | Bug Fixes | Breaking Changes | Prompts Added |
+|---------|-------------|----------------|-----------|------------------|---------------|
+| 1.2.5   | 2025-08-11  | 1              | 3         | 0                | 4             |
+| 1.2.4   | 2025-08-11  | 0              | 5         | 0                | 0             |
+| 1.2.3   | 2025-08-10  | 1              | 0         | 0                | 0             |
+| 1.2.2   | 2025-08-09  | 0              | 3         | 0                | 0             |
+| 1.2.1   | 2025-08-08  | 0              | 3         | 0                | 0             |
+| 1.2.0   | 2025-08-07  | 4              | 0         | 0                | 0             |
+| 1.1.0   | 2025-08-05  | 4              | 0         | 0                | 0             |
+| 1.0.0   | 2025-08-01  | 6              | 0         | 0                | 0             |
 
 ---
 
@@ -206,6 +234,7 @@ When contributing to this project:
 3. **Test all functionality manually** before submitting
 4. **Update README.md** if adding new features
 5. **Include clear commit messages** describing the changes
+6. **NEW: Test prompt system thoroughly** when making prompt changes
 
 ### Commit Message Format
 - `🔧 Fix:` Bug fixes and stability improvements
@@ -214,6 +243,14 @@ When contributing to this project:
 - `🛡️ Security:` Security-related changes
 - `🎨 Style:` UI/UX improvements
 - `⚡ Performance:` Performance optimizations
+- `📋 Prompts:` Prompt system changes and additions
+
+### Prompt Development Guidelines
+- Use clear, specific instructions in prompts
+- Include examples where helpful
+- Test with various content types
+- Document expected output format
+- Provide fallback handling for missing variables
 
 ---
 
