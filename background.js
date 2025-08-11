@@ -1,5 +1,5 @@
 // XCLV Brand Analysis - Background Script
-// Strategic Brand Intelligence Engine with Gemini API
+// Strategic Brand Intelligence Engine with Gemini 2.5 API
 
 class AIServiceBase {
   constructor(serviceName, systemPrompt) {
@@ -30,7 +30,7 @@ class AIServiceBase {
         throw new Error('Gemini API key not configured. Please set it in the extension popup.');
       }
 
-      const model = selectedModel || 'gemini-1.5-flash';
+      const model = selectedModel || 'gemini-2.5-flash';
       const fullPrompt = `${this.systemPrompt}\n\nUser Request: ${userPrompt}`;
 
       const response = await fetch(`${this.apiEndpoint}/${model}:generateContent?key=${geminiApiKey}`, {
@@ -73,13 +73,13 @@ class AIServiceBase {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Gemini API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+        throw new Error(`Gemini 2.5 API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
       }
 
       const data = await response.json();
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        throw new Error('Invalid response format from Gemini API');
+        throw new Error('Invalid response format from Gemini 2.5 API');
       }
 
       return {
@@ -99,7 +99,7 @@ class AIServiceBase {
       chrome.storage.sync.get(['geminiApiKey', 'selectedModel'], (result) => {
         resolve({
           geminiApiKey: result.geminiApiKey || '',
-          selectedModel: result.selectedModel || 'gemini-1.5-flash'
+          selectedModel: result.selectedModel || 'gemini-2.5-flash'
         });
       });
     });
@@ -112,7 +112,7 @@ class AIServiceBase {
 
 class BrandAnalysisService extends AIServiceBase {
   constructor() {
-    super('Brand Analysis', `You are a strategic brand analysis expert with 20+ years of experience.
+    super('Brand Analysis', `You are a strategic brand analysis expert with 20+ years of experience, powered by Gemini 2.5 AI.
 
     Analyze web content for:
     - Tone of voice (professional, casual, authoritative, friendly, etc.)
@@ -121,9 +121,11 @@ class BrandAnalysisService extends AIServiceBase {
     - Emotional resonance and engagement
     - Brand consistency across touchpoints
     - Competitive positioning insights
+    - Cultural relevance and modern market fit
 
     Always return structured JSON responses with actionable insights.
-    Be bold in your assessments - brands need honest feedback to evolve.`);
+    Be bold in your assessments - brands need honest feedback to evolve.
+    Consider current market trends and cultural context in your analysis.`);
   }
 
   async analyzeToneOfVoice(content) {
@@ -135,7 +137,7 @@ class BrandAnalysisService extends AIServiceBase {
   }
 
   buildToneAnalysisPrompt(content) {
-    return `Analyze the tone of voice in this content. Focus on the LiveBranding approach - how this tone positions the brand in the current cultural moment.
+    return `Analyze the tone of voice in this content using Gemini 2.5's advanced understanding. Focus on the LiveBranding approach - how this tone positions the brand in the current cultural moment.
 
 Content to analyze:
 """
@@ -191,7 +193,7 @@ Return JSON with this exact structure:
   }
 
   buildArchetypePrompt(content) {
-    return `Analyze brand archetype alignment in this content. Consider how archetypal messaging creates deeper brand connection.
+    return `Analyze brand archetype alignment in this content using Gemini 2.5's sophisticated pattern recognition. Consider how archetypal messaging creates deeper brand connection in today's market.
 
 Content:
 """
@@ -264,7 +266,7 @@ Return JSON:
   }
 
   buildClarityPrompt(data) {
-    return `Analyze message clarity for this text element. Focus on immediate comprehension and action-driving power.
+    return `Analyze message clarity for this text element using Gemini 2.5's advanced language understanding. Focus on immediate comprehension and action-driving power.
 
 Text: "${data.text}"
 Context: ${data.context.elementType} in ${data.context.section}
@@ -274,6 +276,7 @@ Evaluate:
 2. Action clarity (does it drive specific behavior?)
 3. Emotional resonance (does it create feeling?)
 4. Brand alignment (does it fit the brand voice?)
+5. Cultural relevance (does it connect with current audience expectations?)
 
 Return JSON:
 {
@@ -913,7 +916,7 @@ class ArchetypeAnalyzer {
 
 // Chrome Extension Event Listeners
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('XCLV Brand Analysis Extension installed');
+  console.log('XCLV Brand Analysis Extension with Gemini 2.5 installed');
 });
 
 chrome.action.onClicked.addListener((tab) => {
@@ -941,7 +944,9 @@ async function handleContentAnalysis(contentData) {
       tone: toneAnalysis,
       archetypes: archetypeAnalysis,
       timestamp: Date.now(),
-      url: contentData.url
+      url: contentData.url,
+      model: 'Gemini 2.5',
+      version: '2.5'
     };
   } catch (error) {
     console.error('Brand analysis failed:', error);
