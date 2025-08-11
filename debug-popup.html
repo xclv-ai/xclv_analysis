@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>XCLV Debug Console</title>
+    <style>
+        body {
+            width: 800px;
+            height: 600px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .debug-header {
+            background: #2d2d2d;
+            padding: 15px 20px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .debug-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .debug-status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active { background: #00ff88; color: #000; }
+        .status-error { background: #ff4444; color: #fff; }
+        .status-waiting { background: #ffaa00; color: #000; }
+
+        .debug-tabs {
+            display: flex;
+            background: #2d2d2d;
+            border-bottom: 1px solid #444;
+        }
+
+        .debug-tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .debug-tab:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        .debug-tab.active {
+            color: #00ff88;
+            border-bottom-color: #00ff88;
+            background: #333;
+        }
+
+        .debug-content {
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .debug-panel {
+            display: none;
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .debug-panel.active {
+            display: block;
+        }
+
+        .debug-section {
+            margin-bottom: 25px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .debug-section-header {
+            background: #333;
+            padding: 12px 16px;
+            font-weight: bold;
+            color: #00ff88;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .debug-section-content {
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .debug-section.collapsed .debug-section-content {
+            display: none;
+        }
+
+        .collapse-indicator {
+            transition: transform 0.2s ease;
+        }
+
+        .collapsed .collapse-indicator {
+            transform: rotate(-90deg);
+        }
+
+        .debug-text {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #e0e0e0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .debug-json {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #e0e0e0;
+            white-space: pre;
+            overflow: auto;
+            max-height: 250px;
+        }
+
+        .debug-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .debug-btn {
+            padding: 10px 16px;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .debug-btn:hover {
+            background: #00cc6a;
+            transform: translateY(-1px);
+        }
+
+        .debug-btn:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .debug-btn.secondary {
+            background: #444;
+            color: #fff;
+        }
+
+        .debug-btn.secondary:hover {
+            background: #555;
+        }
+
+        .timestamp {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            background: #442222;
+            border: 1px solid #ff4444;
+            border-radius: 4px;
+            padding: 12px;
+            color: #ff8888;
+            margin-bottom: 15px;
+        }
+
+        .success-message {
+            background: #224422;
+            border: 1px solid #44ff44;
+            border-radius: 4px;
+            padding: 12px;
+            color: #88ff88;
+            margin-bottom: 15px;
+        }
+
+        .debug-metric {
+            display: inline-block;
+            background: #333;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .metric-label {
+            color: #aaa;
+            margin-right: 8px;
+        }
+
+        .metric-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-header">
+        <div class="debug-title">🔍 XCLV Debug Console</div>
+        <div id="debugStatus" class="debug-status status-waiting">Waiting</div>
+    </div>
+
+    <div class="debug-tabs">
+        <button class="debug-tab active" data-tab="extraction">Content Extraction</button>
+        <button class="debug-tab" data-tab="prompts">AI Prompts</button>
+        <button class="debug-tab" data-tab="responses">AI Responses</button>
+        <button class="debug-tab" data-tab="logs">Live Logs</button>
+    </div>
+
+    <div class="debug-content">
+        <!-- Content Extraction Tab -->
+        <div id="extraction" class="debug-panel active">
+            <div class="debug-actions">
+                <button id="extractContentBtn" class="debug-btn">Extract Content</button>
+                <button id="testAnalysisBtn" class="debug-btn">Test Analysis</button>
+                <button id="clearLogsBtn" class="debug-btn secondary">Clear Logs</button>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>📄 Extracted Content</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="timestamp" id="extractionTimestamp">No extraction performed yet</div>
+                    <div class="debug-metric">
+                        <span class="metric-label">Length:</span>
+                        <span class="metric-value" id="contentLength">0</span>
+                    </div>
+                    <div class="debug-metric">
+                        <span class="metric-label">Words:</span>
+                        <span class="metric-value" id="contentWords">0</span>
+                    </div>
+                    <div class="debug-metric">
+                        <span class="metric-label">Elements:</span>
+                        <span class="metric-value" id="contentElements">0</span>
+                    </div>
+                    <div class="debug-text scrollbar" id="extractedContent">Click "Extract Content" to see what will be analyzed</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>🎯 Content Metadata</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-json scrollbar" id="contentMetadata">{}</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>🔧 Element Analysis</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-json scrollbar" id="elementAnalysis">{}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Prompts Tab -->
+        <div id="prompts" class="debug-panel">
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>🧠 System Prompt</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-text scrollbar" id="systemPrompt">No system prompt available</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>📝 User Prompt</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-text scrollbar" id="userPrompt">No user prompt available</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>🚀 Complete Request</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-json scrollbar" id="apiRequest">{}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Responses Tab -->
+        <div id="responses" class="debug-panel">
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>📥 Raw AI Response</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="timestamp" id="responseTimestamp">No response received yet</div>
+                    <div class="debug-json scrollbar" id="rawResponse">{}</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>🎨 Parsed Analysis</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-json scrollbar" id="parsedResponse">{}</div>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>⚠️ Errors & Issues</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div id="responseErrors">No errors detected</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Logs Tab -->
+        <div id="logs" class="debug-panel">
+            <div class="debug-actions">
+                <button id="startLoggingBtn" class="debug-btn">Start Live Logging</button>
+                <button id="exportLogsBtn" class="debug-btn secondary">Export Logs</button>
+            </div>
+
+            <div class="debug-section">
+                <div class="debug-section-header" onclick="toggleSection(this)">
+                    <span>📊 Live Activity Log</span>
+                    <span class="collapse-indicator">▼</span>
+                </div>
+                <div class="debug-section-content">
+                    <div class="debug-text scrollbar" id="liveLog" style="max-height: 400px;">Live logging will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="debug-popup.js"></script>
+</body>
+</html>
