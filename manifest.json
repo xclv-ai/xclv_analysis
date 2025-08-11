@@ -2,49 +2,112 @@
   "manifest_version": 3,
   "name": "XCLV Brand Analysis",
   "version": "1.0.0",
-  "description": "AI-powered brand analysis tool that evaluates tone of voice, brand archetypes, and message clarity on any webpage",
+  "description": "Strategic brand intelligence for real-time analysis of tone, archetypes, and message clarity. Transform any webpage into brand insights.",
+  
+  "author": "XCLV Brand Intelligence",
+  "homepage_url": "https://xclv.ai",
+  
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "XCLV Brand Analysis",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content-styles.css"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "downloads",
+    "scripting",
+    "tabs"
   ],
+  
   "host_permissions": [
-    "*://*/*",
-    "https://openrouter.ai/*"
+    "<all_urls>"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["*://*/*"],
-      "js": ["content.js"],
-      "css": ["content.css"]
-    }
+  
+  "optional_permissions": [
+    "background",
+    "notifications"
   ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
+  
   "web_accessible_resources": [
     {
       "resources": [
-        "icons/*.png",
-        "analysis-panel.html",
-        "styles/*.css"
+        "content-styles.css",
+        "icons/*"
       ],
-      "matches": ["*://*/*"]
+      "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  
+  "commands": {
+    "toggle-analysis": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+B",
+        "mac": "Command+Shift+B"
+      },
+      "description": "Toggle brand analysis on current page"
+    },
+    "show-panel": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P",
+        "mac": "Command+Shift+P"
+      },
+      "description": "Show/hide analysis panel"
+    },
+    "export-report": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "Export brand analysis report"
+    }
+  },
+  
+  "options_page": "options.html",
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.anthropic.com;"
+  },
+  
+  "minimum_chrome_version": "88",
+  
+  "externally_connectable": {
+    "matches": ["https://xclv.ai/*"]
+  },
+  
+  "short_name": "XCLV Analysis",
+  
+  "storage": {
+    "managed_schema": "schema.json"
+  },
+  
+  "update_url": "https://clients2.google.com/service/update2/crx"
 }
