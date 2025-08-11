@@ -1,5 +1,5 @@
-// XCLV Brand Analysis - Enhanced Background Service with Dynamic Prompt Loading
-// Supports loading prompts from separate .md files for better maintainability
+// XCLV Brand Analysis - Enhanced Background Service with Robust API Handling
+// Fixed "Invalid candidate structure" error and improved response parsing
 
 class PromptManager {
   constructor() {
@@ -74,22 +74,61 @@ CONTENT: ${variables.text || 'No content provided'}
 
 Provide a comprehensive JSON analysis with these sections:
 
-1. TONE OF VOICE ANALYSIS:
-- formality: score 0-100 (0=very casual, 100=very formal)
-- warmth: score 0-100 (0=cold/distant, 100=warm/personal)
-- authority: score 0-100 (0=humble/uncertain, 100=confident/authoritative)
-- authenticity: score 0-100 (0=corporate/artificial, 100=genuine/human)
-- innovation: score 0-100 (0=traditional/conservative, 100=cutting-edge/disruptive)
-- dominantTone: brief description of overall voice
-- brandPersonality: one-sentence brand character description
-- recommendations: array of specific improvements
-- culturalAlignment: how well the brand fits current cultural trends
-
-2. BRAND ARCHETYPE ANALYSIS:
-- primaryArchetype: {name, score, evidence array}
-- secondaryArchetype: {name, score, evidence array}
-- recommendations: array with archetype and rationale
-- brandEvolution: suggested direction for brand development
+{
+  "brand_name": "[Extracted or inferred brand name]",
+  "tone_analysis": {
+    "formality": {
+      "score": [0-100],
+      "position": "[Very Formal|Formal|Balanced|Casual|Very Casual]",
+      "evidence": "[Specific language examples]"
+    },
+    "warmth": {
+      "score": [0-100], 
+      "position": "[Cold|Cool|Neutral|Warm|Very Warm]",
+      "evidence": "[Specific language examples]"
+    },
+    "authority": {
+      "score": [0-100],
+      "position": "[Humble|Modest|Balanced|Confident|Authoritative]", 
+      "evidence": "[Specific language examples]"
+    },
+    "authenticity": {
+      "score": [0-100],
+      "position": "[Corporate|Professional|Balanced|Genuine|Very Authentic]",
+      "evidence": "[Specific language examples]"
+    },
+    "innovation": {
+      "score": [0-100],
+      "position": "[Traditional|Conservative|Balanced|Progressive|Cutting-edge]",
+      "evidence": "[Specific language examples]"
+    },
+    "dominant_tone": "[Overall tone description]",
+    "brand_personality": "[One-sentence brand character description]"
+  },
+  "archetype_analysis": {
+    "primary_archetype": {
+      "name": "[Primary archetype name]",
+      "confidence": [0-100],
+      "evidence": ["[Supporting quote 1]", "[Supporting quote 2]"],
+      "justification": "[Why this archetype fits]"
+    },
+    "secondary_archetype": {
+      "name": "[Secondary archetype name]", 
+      "confidence": [0-100],
+      "evidence": ["[Supporting quote 1]"],
+      "justification": "[How it complements primary]"
+    }
+  },
+  "recommendations": {
+    "quick_wins": [
+      {
+        "area": "[Specific improvement area]",
+        "action": "[Specific actionable change]",
+        "impact": "[Expected business impact]"
+      }
+    ]
+  }
+}
 
 Return ONLY valid JSON. No markdown, no explanations, just the analysis object.`,
 
@@ -110,32 +149,32 @@ ${JSON.stringify(variables.context || {}, null, 2)}
 Provide a focused JSON analysis:
 
 {
-  "clarityScore": 0-100,
-  "comprehensionLevel": "immediate" | "quick" | "slow",
-  "emotionalResonance": 0-100,
-  "actionPotential": "high" | "medium" | "low",
+  "clarityScore": [0-100],
+  "comprehensionLevel": "immediate"|"quick"|"slow",
+  "emotionalResonance": [0-100],
+  "actionPotential": "high"|"medium"|"low",
   "brandAlignment": {
     "tone": "description of tone detected",
     "archetype": "likely brand archetype",
-    "consistency": 0-100
+    "consistency": [0-100]
   },
   "quickInsights": [
     {
-      "type": "positive" | "improvement" | "warning",
+      "type": "positive"|"improvement"|"warning",
       "message": "specific insight"
     }
   ],
   "recommendations": [
     {
-      "area": "clarity" | "tone" | "positioning",
+      "area": "clarity"|"tone"|"positioning",
       "suggestion": "specific improvement", 
       "impact": "expected result"
     }
   ],
   "textQuality": {
-    "readability": 0-100,
-    "engagement": 0-100,
-    "memorability": 0-100
+    "readability": [0-100],
+    "engagement": [0-100],
+    "memorability": [0-100]
   }
 }
 
@@ -154,7 +193,7 @@ Return ONLY valid JSON.`
 class BrandAnalysisService {
   constructor() {
     this.apiKey = null;
-    this.selectedModel = 'gemini-2.5-flash';
+    this.selectedModel = 'gemini-1.5-flash';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
     this.isInitialized = false;
     this.promptManager = new PromptManager();
@@ -164,7 +203,7 @@ class BrandAnalysisService {
     try {
       const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
       this.apiKey = result.geminiApiKey;
-      this.selectedModel = result.selectedModel || 'gemini-2.5-flash';
+      this.selectedModel = result.selectedModel || 'gemini-1.5-flash';
       
       // Initialize prompt manager
       await this.promptManager.initialize();
@@ -311,30 +350,81 @@ class BrandAnalysisService {
 
     const result = await response.json();
     
-    // Enhanced error checking for the response structure
-    if (!result.candidates || !Array.isArray(result.candidates) || result.candidates.length === 0) {
-      throw new Error('No candidates in API response');
+    // Enhanced error checking with better debugging
+    console.log('XCLV: Raw API response:', JSON.stringify(result, null, 2));
+    
+    if (!result) {
+      throw new Error('Empty API response received');
+    }
+
+    // Check for error in response
+    if (result.error) {
+      throw new Error(`API error: ${result.error.message || 'Unknown API error'}`);
+    }
+
+    // Check for candidates array
+    if (!result.candidates || !Array.isArray(result.candidates)) {
+      console.error('XCLV: No candidates array in response:', result);
+      throw new Error('No candidates array in API response');
+    }
+
+    if (result.candidates.length === 0) {
+      throw new Error('Empty candidates array in API response');
     }
 
     const candidate = result.candidates[0];
-    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
-      throw new Error('Invalid candidate structure in API response');
-    }
-
-    const part = candidate.content.parts[0];
-    if (!part.text) {
-      throw new Error('No text content in API response');
-    }
-
-    const text = part.text;
     
+    // Check if candidate was blocked
+    if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      throw new Error(`Content generation stopped: ${candidate.finishReason}`);
+    }
+
+    // More flexible content extraction
+    let textContent = null;
+
+    // Try different response structures
+    if (candidate.content && candidate.content.parts && Array.isArray(candidate.content.parts)) {
+      // Standard structure
+      const part = candidate.content.parts[0];
+      if (part && part.text) {
+        textContent = part.text;
+      }
+    } else if (candidate.text) {
+      // Alternative structure
+      textContent = candidate.text;
+    } else if (candidate.output) {
+      // Another alternative structure
+      textContent = candidate.output;
+    }
+
+    if (!textContent) {
+      console.error('XCLV: No text content found in candidate:', candidate);
+      throw new Error('No text content in API response candidate');
+    }
+
     try {
-      // Clean the response text
-      const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleanText);
+      // Clean the response text more aggressively
+      let cleanText = textContent
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .replace(/^\s*```[\s\S]*?```\s*/g, '')
+        .trim();
+      
+      // Find JSON object boundaries
+      const jsonStart = cleanText.indexOf('{');
+      const jsonEnd = cleanText.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanText = cleanText.substring(jsonStart, jsonEnd + 1);
+      }
+
+      const parsedResponse = JSON.parse(cleanText);
+      console.log('XCLV: Successfully parsed response:', parsedResponse);
+      return parsedResponse;
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', text);
-      throw new Error(`Failed to parse API response: ${parseError.message}`);
+      console.error('XCLV: Failed to parse JSON response:', textContent);
+      console.error('XCLV: Parse error:', parseError.message);
+      throw new Error(`Failed to parse API response as JSON: ${parseError.message}`);
     }
   }
 
@@ -344,7 +434,7 @@ class BrandAnalysisService {
     }
 
     try {
-      const testPrompt = 'Respond with a simple JSON object: {"status": "connected", "model": "' + this.selectedModel + '"}';
+      const testPrompt = 'Respond with exactly this JSON object: {"status": "connected", "model": "' + this.selectedModel + '"}';
       const result = await this.callGeminiAPI(testPrompt, { text: 'test' });
       
       if (result && result.status === 'connected') {
