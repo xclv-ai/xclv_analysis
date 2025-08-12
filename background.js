@@ -258,8 +258,15 @@ class BrandAnalysisService {
       throw new Error('Gemini API key not configured');
     }
 
-    // Use tone-of-voice-analysis prompt for interactive element analysis
-    const systemPrompt = this.promptManager.getPrompt('tone-of-voice-analysis', {
+    // Determine which prompt to use based on analysis type
+    const analysisType = data.analysisType || 'tone-of-voice-analysis';
+    let promptName = 'tone-of-voice-analysis'; // default
+    
+    if (analysisType === 'brand-archetypes') {
+      promptName = 'brand-archetype-analysis';
+    }
+    
+    const systemPrompt = this.promptManager.getPrompt(promptName, {
       url: data.page?.url || 'Unknown URL',
       text: data.text
     });
@@ -276,7 +283,8 @@ class BrandAnalysisService {
           timestamp: new Date().toISOString(),
           element: data.element,
           url: data.page?.url,
-          promptType: 'tone-of-voice-analysis'
+          promptType: promptName,
+          analysisType: analysisType
         }
       };
     } catch (error) {
@@ -291,7 +299,8 @@ class BrandAnalysisService {
           timestamp: new Date().toISOString(),
           element: data.element,
           url: data.page?.url,
-          promptType: 'tone-of-voice-analysis'
+          promptType: promptName,
+          analysisType: analysisType
         }
       };
     }
@@ -299,10 +308,26 @@ class BrandAnalysisService {
 
   async callGeminiAPI(systemPrompt, data) {
     // Structure the request with system prompt and user content
-    const userContent = `**WEBSITE:** ${data.page?.url || 'Unknown URL'}
+    let userContent;
+    
+    if (data.analysisType === 'brand-archetypes') {
+      // Brand archetype analysis expects JSON format
+      userContent = JSON.stringify({
+        website: data.page?.url || 'Unknown URL',
+        title: data.page?.title || 'Unknown Title',
+        content: {
+          text: data.text,
+          element_type: data.element?.tagName || 'unknown',
+          context: data.context || {}
+        }
+      });
+    } else {
+      // Default tone-of-voice analysis format
+      userContent = `**WEBSITE:** ${data.page?.url || 'Unknown URL'}
 **CONTENT TO ANALYZE:** ${data.text}
 
 Analyze this web content for brand tone of voice using the Nielsen Norman Group's Core Four Dimensions framework.`;
+    }
 
     const requestBody = {
       system_instruction: {

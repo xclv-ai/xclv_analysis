@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.30
+// Click-to-Analyze Interactive Mode v1.2.32
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.30...');
+  console.log('XCLV: Content script loading v1.2.32...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -1069,6 +1069,12 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
                         <span class="value">Tone of Voice Analysis</span>
                       </label>
                     </div>
+                    <div style="margin: 15px 0;">
+                      <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="brand-archetypes-checkbox" style="margin-right: 10px;">
+                        <span class="value">Brand Archetypes Mix</span>
+                      </label>
+                    </div>
                     <button id="run-analysis-btn" style="
                       background: #00ff88; 
                       color: #000; 
@@ -1213,16 +1219,26 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
           return;
         }
 
-        // Check if ToV analysis is selected
+        // Check which analyses are selected
         const tovCheckbox = this.debugWindow.document.getElementById('tov-analysis-checkbox');
-        if (!tovCheckbox || !tovCheckbox.checked) {
-          this.logToDebugPopup('⚠️ Please select Tone of Voice Analysis');
+        const archetypesCheckbox = this.debugWindow.document.getElementById('brand-archetypes-checkbox');
+        
+        const tovSelected = tovCheckbox && tovCheckbox.checked;
+        const archetypesSelected = archetypesCheckbox && archetypesCheckbox.checked;
+        
+        if (!tovSelected && !archetypesSelected) {
+          this.logToDebugPopup('⚠️ Please select at least one analysis type');
           return;
         }
 
         const { text, element } = this.pendingAnalysis;
 
-        this.logToDebugPopup('🔍 Starting Tone of Voice Analysis...');
+        // Log selected analyses
+        const selectedAnalyses = [];
+        if (tovSelected) selectedAnalyses.push('Tone of Voice');
+        if (archetypesSelected) selectedAnalyses.push('Brand Archetypes');
+        
+        this.logToDebugPopup(`🔍 Starting Analysis: ${selectedAnalyses.join(' + ')}`);
         this.logToDebugPopup(`📝 Content: ${text.substring(0, 100)}...`);
         this.logToDebugPopup(`🏷️ Element: ${element.tagName}`);
         this.logToDebugPopup(`📏 Content length: ${text.length} characters`);
@@ -1255,7 +1271,21 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         this.logToDebugPopup('📡 Sending API request to Gemini...');
         const startTime = Date.now();
         
-        const response = await this.sendAnalysisRequest(text, element);
+        // Run analyses based on selections
+        let response;
+        if (tovSelected && archetypesSelected) {
+          // Run both analyses
+          this.logToDebugPopup('🔄 Running dual analysis...');
+          const [tovResponse, archetypesResponse] = await Promise.all([
+            this.sendAnalysisRequest(text, element, 'tone-of-voice'),
+            this.sendAnalysisRequest(text, element, 'brand-archetypes')
+          ]);
+          response = this.combineAnalysisResults(tovResponse, archetypesResponse);
+        } else if (tovSelected) {
+          response = await this.sendAnalysisRequest(text, element, 'tone-of-voice');
+        } else if (archetypesSelected) {
+          response = await this.sendAnalysisRequest(text, element, 'brand-archetypes');
+        }
         
         const duration = Date.now() - startTime;
         this.logToDebugPopup(`⏱️ API call completed in ${duration}ms`);
@@ -1333,27 +1363,71 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         
         if (!resultsSection || !resultsContent) return;
 
-        const resultsHTML = `
-          <div style="margin-bottom: 15px;">
-            <div class="key">Model:</div>
-            <div class="value">${response.metadata?.model || 'Unknown'}</div>
-          </div>
+        // Check if it's a combined analysis
+        const isCombined = response.metadata?.analysisType === 'combined';
+        
+        let resultsHTML = '';
+        
+        if (isCombined) {
+          // Combined analysis display
+          resultsHTML = `
+            <div style="margin-bottom: 15px;">
+              <div class="key">Analysis Type:</div>
+              <div class="value">Combined (ToV + Brand Archetypes)</div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">ToV Model:</div>
+              <div class="value">${response.metadata?.tovModel || 'Unknown'}</div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">Archetypes Model:</div>
+              <div class="value">${response.metadata?.archetypesModel || 'Unknown'}</div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <div class="key">🎯 Tone of Voice Results:</div>
+              <pre class="json-result">${JSON.stringify(response.data.toneOfVoice, null, 2)}</pre>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <div class="key">🏛️ Brand Archetypes Results:</div>
+              <pre class="json-result">${JSON.stringify(response.data.brandArchetypes, null, 2)}</pre>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">System Prompts:</div>
+              <pre style="max-height: 200px; overflow-y: auto;">${response.systemPrompt || 'No system prompts available'}</pre>
+            </div>
+          `;
+        } else {
+          // Single analysis display
+          const analysisTypeIcon = response.metadata?.promptType === 'brand-archetype-analysis' ? '🏛️' : '🎯';
+          const analysisTypeName = response.metadata?.promptType === 'brand-archetype-analysis' ? 'Brand Archetypes' : 'Tone of Voice';
           
-          <div style="margin-bottom: 15px;">
-            <div class="key">Prompt Type:</div>
-            <div class="value">${response.metadata?.promptType || 'Unknown'}</div>
-          </div>
-          
-          <div style="margin-bottom: 15px;">
-            <div class="key">Results:</div>
-            <pre class="json-result">${JSON.stringify(response.data, null, 2)}</pre>
-          </div>
-          
-          <div style="margin-bottom: 15px;">
-            <div class="key">System Prompt:</div>
-            <pre style="max-height: 150px; overflow-y: auto;">${response.systemPrompt || 'No system prompt available'}</pre>
-          </div>
-        `;
+          resultsHTML = `
+            <div style="margin-bottom: 15px;">
+              <div class="key">Analysis Type:</div>
+              <div class="value">${analysisTypeIcon} ${analysisTypeName}</div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">Model:</div>
+              <div class="value">${response.metadata?.model || 'Unknown'}</div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">Results:</div>
+              <pre class="json-result">${JSON.stringify(response.data, null, 2)}</pre>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <div class="key">System Prompt:</div>
+              <pre style="max-height: 150px; overflow-y: auto;">${response.systemPrompt || 'No system prompt available'}</pre>
+            </div>
+          `;
+        }
 
         resultsContent.innerHTML = resultsHTML;
         resultsSection.style.display = 'block';
@@ -1406,13 +1480,14 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       }
     }
 
-    async sendAnalysisRequest(text, element) {
+    async sendAnalysisRequest(text, element, analysisType = 'tone-of-voice') {
       return new Promise((resolve, reject) => {
         try {
           chrome.runtime.sendMessage({
-            action: 'analyzeTextElement', // FIXED: Use correct message type for element analysis
+            action: 'analyzeTextElement',
             data: {
               text: text,
+              analysisType: analysisType, // Add analysis type
               element: {
                 tagName: element.tagName.toLowerCase(),
                 className: element.className,
@@ -1436,6 +1511,40 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
           reject(error);
         }
       });
+    }
+
+    combineAnalysisResults(tovResponse, archetypesResponse) {
+      try {
+        const combined = {
+          success: tovResponse.success && archetypesResponse.success,
+          data: {
+            toneOfVoice: tovResponse.data || null,
+            brandArchetypes: archetypesResponse.data || null
+          },
+          metadata: {
+            ...tovResponse.metadata,
+            analysisType: 'combined',
+            tovModel: tovResponse.metadata?.model,
+            archetypesModel: archetypesResponse.metadata?.model
+          }
+        };
+        
+        if (tovResponse.systemPrompt || archetypesResponse.systemPrompt) {
+          combined.systemPrompt = `TOV PROMPT:\n${tovResponse.systemPrompt || 'None'}\n\nARCHETYPES PROMPT:\n${archetypesResponse.systemPrompt || 'None'}`;
+        }
+        
+        if (!combined.success) {
+          combined.error = `TOV: ${tovResponse.error || 'OK'} | Archetypes: ${archetypesResponse.error || 'OK'}`;
+        }
+        
+        return combined;
+      } catch (error) {
+        return {
+          success: false,
+          error: `Failed to combine results: ${error.message}`,
+          data: null
+        };
+      }
     }
 
     getElementContext(element) {
