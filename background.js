@@ -202,9 +202,37 @@ class BrandAnalysisService {
 
   async initialize() {
     try {
-      const result = await chrome.storage.local.get(['geminiApiKey', 'selectedModel']);
-      this.apiKey = result.geminiApiKey;
-      this.selectedModel = result.selectedModel || 'gemini-2.5-flash'; // KEEPING DEFAULT AS 2.5
+      const result = await chrome.storage.local.get(['xclvApiKey', 'xclvSelectedModel', 'geminiApiKey', 'selectedModel']);
+      
+      // Load API key with decryption support and migration
+      let decryptedApiKey = '';
+      if (result.xclvApiKey) {
+        // New encrypted storage
+        try {
+          decryptedApiKey = this.decryptApiKey(result.xclvApiKey);
+          console.log('XCLV: Using encrypted API key');
+        } catch (error) {
+          console.error('XCLV: Failed to decrypt API key:', error);
+        }
+      } else if (result.geminiApiKey) {
+        // Legacy plaintext storage - migrate to encrypted
+        console.log('XCLV: Migrating plaintext API key to encrypted storage');
+        decryptedApiKey = result.geminiApiKey;
+        // Store encrypted version
+        const encryptedKey = this.encryptApiKey(decryptedApiKey);
+        await chrome.storage.local.set({
+          xclvApiKey: encryptedKey,
+          xclvStorageVersion: '1.2.33'
+        });
+        // Remove legacy key
+        await chrome.storage.local.remove(['geminiApiKey']);
+      }
+      
+      this.apiKey = decryptedApiKey;
+      this.selectedModel = result.xclvSelectedModel || result.selectedModel || 'gemini-2.5-flash';
+      
+      console.log('XCLV: API key loaded:', this.apiKey ? 'YES' : 'NO');
+      console.log('XCLV: Selected model:', this.selectedModel);
       
       // Initialize prompt manager
       await this.promptManager.initialize();
@@ -213,6 +241,30 @@ class BrandAnalysisService {
       console.log('XCLV: Brand Analysis Service initialized');
     } catch (error) {
       console.error('Failed to initialize Brand Analysis Service:', error);
+    }
+  }
+
+  // XOR encryption/decryption methods (same as popup)
+  encryptApiKey(text) {
+    const key = 'xclv2025';
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return btoa(result);
+  }
+
+  decryptApiKey(encryptedText) {
+    try {
+      const key = 'xclv2025';
+      const decoded = atob(encryptedText);
+      let result = '';
+      for (let i = 0; i < decoded.length; i++) {
+        result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      return result;
+    } catch (error) {
+      throw new Error('Failed to decrypt API key');
     }
   }
 
@@ -549,8 +601,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
       
     case 'updateApiSettings':
+      // API key from popup is already decrypted for direct use
       brandAnalysisService.apiKey = request.data.apiKey;
       brandAnalysisService.selectedModel = request.data.selectedModel;
+      console.log('XCLV: API settings updated - Key:', request.data.apiKey ? 'SET' : 'NOT SET');
       sendResponse({ success: true });
       break;
 

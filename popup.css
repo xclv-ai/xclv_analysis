@@ -1,50 +1,7 @@
-/* XCLV Brand Analysis Extension - Popup Styles */
-/* Modern, professional UI with collapsible sections */
+/* XCLV Brand Analysis Extension - Popup-Specific Styles */
+/* Uses shared-styles.css for base design system */
 
-:root {
-  /* Brand Colors */
-  --xclv-primary: #2563eb;
-  --xclv-primary-dark: #1d4ed8;
-  --xclv-secondary: #64748b;
-  --xclv-accent: #f59e0b;
-  --xclv-success: #10b981;
-  --xclv-warning: #f59e0b;
-  --xclv-error: #ef4444;
-  
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-dark: #1e293b;
-  
-  /* Text Colors */
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --text-white: #ffffff;
-  
-  /* Border Colors */
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
-  --border-dark: #94a3b8;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  
-  /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  
-  /* Transitions */
-  --transition-fast: 0.15s ease-in-out;
-  --transition-normal: 0.3s ease-in-out;
-  --transition-slow: 0.5s ease-in-out;
-}
+@import "shared-styles.css";
 
 /* Reset and Base Styles */
 * {
@@ -56,12 +13,16 @@
 body {
   width: 400px;
   min-height: 600px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background: var(--bg-primary);
   overflow-x: hidden;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
@@ -70,15 +31,28 @@ body {
   min-height: 100vh;
 }
 
-/* Header */
+/* Header - Payman-inspired */
 .header {
-  background: linear-gradient(135deg, var(--xclv-primary) 0%, var(--xclv-primary-dark) 100%);
+  background: var(--bg-gradient);
   color: var(--text-white);
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(241, 199, 214, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .logo {
@@ -103,36 +77,56 @@ body {
 }
 
 .brand {
-  font-size: 16px;
+  font-family: var(--font-headline);
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
 }
 
 .subtitle {
-  font-size: 10px;
-  opacity: 0.9;
+  font-family: var(--font-body);
+  font-size: 9px;
+  opacity: 0.85;
   font-weight: 500;
-  letter-spacing: 1px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--xclv-success);
-  animation: statusBlink 1.5s infinite;
+  background-color: var(--xclv-accent);
+  animation: statusPulse 2s infinite;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
 }
 
-@keyframes statusBlink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0.3; }
+@keyframes statusPulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(0, 255, 136, 0.8);
+  }
 }
 
 .status-text {
@@ -190,13 +184,15 @@ body {
 }
 
 .section h3 {
-  font-size: 14px;
+  font-family: var(--font-headline);
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--spacing-md);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  letter-spacing: -0.01em;
 }
 
 /* Collapsible Sections */
@@ -396,15 +392,16 @@ body {
   gap: var(--spacing-sm);
 }
 
-/* Button Styles */
+/* Button Styles - Payman-inspired */
 .btn {
   padding: var(--spacing-sm) var(--spacing-md);
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-normal);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -412,6 +409,24 @@ body {
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left var(--transition-slow);
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn:disabled {
@@ -420,25 +435,29 @@ body {
 }
 
 .btn.primary {
-  background-color: var(--xclv-primary);
+  background: var(--bg-gradient);
   color: var(--text-white);
-}
-
-.btn.primary:hover:not(:disabled) {
-  background-color: var(--xclv-primary-dark);
-  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
+.btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--xclv-primary) 0%, var(--xclv-primary-light) 100%);
+}
+
 .btn.secondary {
-  background-color: var(--bg-tertiary);
+  background: var(--bg-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--border-medium);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn.secondary:hover:not(:disabled) {
-  background-color: var(--border-light);
-  border-color: var(--border-dark);
+  background: var(--bg-soft);
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn.danger {
@@ -454,8 +473,10 @@ body {
 
 .btn.large {
   padding: var(--spacing-md) var(--spacing-lg);
+  font-family: var(--font-headline);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .btn.small {

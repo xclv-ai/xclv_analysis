@@ -38,11 +38,9 @@ class XCLVSecureStorage {
 class XCLVPopupController {
   constructor() {
     this.isInitialized = false;
-    this.settings = {
-      hoverInsights: true
-    };
     this.analysisData = null;
     this.isAnalyzing = false;
+    this.isInteractiveModeEnabled = false;
   }
 
   async initialize() {
@@ -133,15 +131,13 @@ class XCLVPopupController {
       this.setupButton('stop-analysis-btn', () => this.stopAnalysis());
 
       // Interactive mode
-      this.setupButton('enable-interactive-btn', () => this.enableInteractiveMode());
-      this.setupButton('disable-interactive-btn', () => this.disableInteractiveMode());
+      this.setupButton('toggle-interactive-btn', () => this.toggleInteractiveMode());
 
       // API settings
       this.setupButton('save-api-btn', () => this.saveApiSettings());
       this.setupButton('test-api-btn', () => this.testApiConnection());
 
-      // Settings toggles - only hover insights now
-      this.setupToggle('hover-insights', 'hoverInsights');
+      // Removed hover insights toggle - no longer needed
 
       // Export functionality
       this.setupButton('export-report-btn', () => this.exportReport());
@@ -168,16 +164,7 @@ class XCLVPopupController {
     }
   }
 
-  setupToggle(id, settingKey) {
-    const toggle = document.getElementById(id);
-    if (toggle) {
-      toggle.checked = this.settings[settingKey];
-      toggle.addEventListener('change', (e) => {
-        this.settings[settingKey] = e.target.checked;
-        this.saveSettings();
-      });
-    }
-  }
+  // setupToggle method removed - no longer needed
 
   async startPageAnalysis() {
     try {
@@ -322,53 +309,8 @@ class XCLVPopupController {
     }
   }
 
-  async enableInteractiveMode() {
-    try {
-      const tabs = await this.getCurrentTab();
-      if (!tabs || tabs.length === 0) {
-        throw new Error('No active tab found');
-      }
-
-      // Inject content script first
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          files: ['content.js']
-        });
-      } catch (e) {
-        console.log('Content script already present:', e.message);
-      }
-
-      await this.sendMessageToTab(tabs[0].id, {
-        action: 'enableInteractiveMode'
-      });
-
-      this.showNotification('Interactive mode enabled - hover over text elements', 'success');
-
-    } catch (error) {
-      console.error('XCLV Popup: Failed to enable interactive mode:', error);
-      this.showNotification(`Failed to enable interactive mode: ${error.message}`, 'error');
-    }
-  }
-
-  async disableInteractiveMode() {
-    try {
-      const tabs = await this.getCurrentTab();
-      if (!tabs || tabs.length === 0) {
-        throw new Error('No active tab found');
-      }
-
-      await this.sendMessageToTab(tabs[0].id, {
-        action: 'disableInteractiveMode'
-      });
-
-      this.showNotification('Interactive mode disabled', 'info');
-
-    } catch (error) {
-      console.error('XCLV Popup: Failed to disable interactive mode:', error);
-      this.showNotification(`Failed to disable interactive mode: ${error.message}`, 'error');
-    }
-  }
+  // Old enableInteractiveMode and disableInteractiveMode methods removed
+  // Replaced with single toggleInteractiveMode method
 
   async saveApiSettings() {
     try {
@@ -610,16 +552,11 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
   async loadSettings() {
     try {
       const result = await chrome.storage.local.get([
-        'hoverInsights',
         'xclvApiKey',      // New encrypted key
         'xclvSelectedModel', // New model setting  
         'geminiApiKey',    // Legacy key for migration
         'selectedModel'    // Legacy model for migration
       ]);
-
-      this.settings = {
-        hoverInsights: result.hoverInsights !== false // Default true
-      };
 
       // Handle API key (with migration from legacy storage)
       let decryptedApiKey = '';
@@ -676,7 +613,9 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
 
   async saveSettings() {
     try {
-      await chrome.storage.local.set(this.settings);
+      // Settings are now saved individually when needed
+      // No general settings object to save anymore
+      console.log('XCLV Popup: Settings saved');
     } catch (error) {
       console.error('XCLV Popup: Failed to save settings:', error);
     }
@@ -699,6 +638,61 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
         }
       });
     });
+  }
+
+  async toggleInteractiveMode() {
+    try {
+      const tabs = await this.getCurrentTab();
+      if (!tabs || tabs.length === 0) {
+        throw new Error('No active tab found');
+      }
+
+      const toggleBtn = document.getElementById('toggle-interactive-btn');
+      const btnText = toggleBtn.querySelector('.btn-text');
+      const btnIcon = toggleBtn.querySelector('.btn-icon');
+
+      if (this.isInteractiveModeEnabled) {
+        // Disable interactive mode
+        await this.sendMessageToTab(tabs[0].id, {
+          action: 'disableInteractiveMode'
+        });
+
+        this.isInteractiveModeEnabled = false;
+        toggleBtn.setAttribute('data-state', 'disabled');
+        btnText.textContent = 'Enable Click-to-Analyze';
+        btnIcon.textContent = '✨';
+        toggleBtn.classList.remove('primary');
+        toggleBtn.classList.add('secondary');
+
+        this.showNotification('Interactive mode disabled', 'info');
+      } else {
+        // Enable interactive mode
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: ['content.js']
+          });
+        } catch (e) {
+          console.log('Content script already present:', e.message);
+        }
+
+        await this.sendMessageToTab(tabs[0].id, {
+          action: 'enableInteractiveMode'
+        });
+
+        this.isInteractiveModeEnabled = true;
+        toggleBtn.setAttribute('data-state', 'enabled');
+        btnText.textContent = 'Disable Interactive Mode';
+        btnIcon.textContent = '❌';
+        toggleBtn.classList.remove('secondary');
+        toggleBtn.classList.add('primary');
+
+        this.showNotification('Interactive mode enabled - click text elements to analyze', 'success');
+      }
+    } catch (error) {
+      console.error('XCLV Popup: Failed to toggle interactive mode:', error);
+      this.showNotification(`Failed to toggle interactive mode: ${error.message}`, 'error');
+    }
   }
 }
 

@@ -5,6 +5,36 @@ All notable changes to the XCLV Brand Analysis Extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.34] - 2025-08-12
+
+### 🎉 MILESTONE: Dual Analysis System Complete
+- **FULL DUAL ANALYSIS CAPABILITY** - Choose Tone-of-Voice, Brand Archetypes, or Both
+- **JUNG'S BRAND ARCHETYPES INTEGRATION** - Complete 12 archetypes analysis with percentage distribution
+- **PARALLEL PROCESSING** - Dual analysis runs both APIs simultaneously for optimal performance
+- **FIXED API KEY SYSTEM** - Resolved XOR decryption issue in background service
+- **ENHANCED DEBUG INTERFACE** - Separate result sections for individual and combined analyses
+
+### 🔧 Critical Bug Fixes
+- **API Key Configuration Fix**: Background service now properly decrypts XOR encrypted API keys
+- **Storage System Alignment**: Fixed mismatch between popup storage (xclvApiKey) and background loading
+- **Dual Analysis Error Handling**: Comprehensive error recovery for failed API calls in combined mode
+- **Response Validation**: Robust handling of missing or malformed API responses
+
+### ✅ New Features Added
+- **Brand Archetypes Mix Checkbox**: Added second analysis option in debug popup
+- **Jung's 12 Archetypes Framework**: Complete archetypal analysis with percentage distribution
+- **Parallel API Processing**: Both analyses run simultaneously using Promise.all()
+- **Combined Results Display**: Enhanced UI showing both ToV and Archetypes results
+- **Analysis Type Selection**: Users can choose individual or combined analysis modes
+
+### 🛡️ Enhanced Reliability
+- **Error Recovery**: Graceful handling when one or both analyses fail
+- **Response Object Validation**: Ensures valid response objects even on API failures
+- **Debug Logging**: Comprehensive console logging for troubleshooting dual analysis
+- **Storage Migration**: Automatic migration from legacy API key storage
+
+---
+
 ## [1.2.31] - 2025-08-12
 
 ### 🎉 MILESTONE: Production Ready Tone-of-Voice Analysis System

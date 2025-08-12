@@ -1,56 +1,80 @@
 /* XCLV Brand Analysis - Content Script Styles */
+/* Payman-inspired design with enhanced micro-interactions */
+
+@import "shared-styles.css";
 
 /* ===== INTERACTIVE HOVER FUNCTIONALITY STYLES ===== */
 
-/* Text Element Highlighting - CRITICAL FOR HOVER FUNCTIONALITY */
+/* Text Element Highlighting - Enhanced Payman-style */
 .xclv-highlighted {
-  filter: blur(1px) !important;
-  transition: filter 0.2s ease !important;
+  filter: blur(0.5px) !important;
+  transition: all var(--xclv-transition) !important;
   position: relative !important;
-  background: rgba(0, 255, 136, 0.05) !important;
-  border-radius: 4px !important;
-  outline: 2px solid rgba(0, 255, 136, 0.3) !important;
-  outline-offset: 2px !important;
-}
-
-/* NEW: Selected Element Styling - Different from hover */
-.xclv-selected {
-  filter: none !important;
-  transition: all 0.2s ease !important;
-  position: relative !important;
-  background: rgba(0, 255, 136, 0.1) !important;
-  border-radius: 4px !important;
-  outline: 3px solid rgba(0, 255, 136, 0.6) !important;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(241, 199, 214, 0.12)) !important;
+  border-radius: 6px !important;
+  outline: 2px solid rgba(0, 255, 136, 0.4) !important;
   outline-offset: 3px !important;
   box-shadow: 
-    0 0 15px rgba(0, 255, 136, 0.3),
-    inset 0 0 10px rgba(0, 255, 136, 0.1) !important;
+    0 0 15px rgba(0, 255, 136, 0.2),
+    inset 0 0 10px rgba(241, 199, 214, 0.1) !important;
+}
+
+/* Selected Element Styling - Enhanced Payman-style */
+.xclv-selected {
+  filter: none !important;
+  transition: all var(--xclv-transition) !important;
+  position: relative !important;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.12), rgba(5, 49, 57, 0.08)) !important;
+  border-radius: 8px !important;
+  outline: 3px solid var(--xclv-accent) !important;
+  outline-offset: 4px !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 136, 0.4),
+    0 4px 20px rgba(5, 49, 57, 0.1),
+    inset 0 0 15px rgba(241, 199, 214, 0.15) !important;
   z-index: 1000 !important;
 }
 
-/* Analyze Button - CRITICAL FOR INTERACTIVE MODE */
+/* Analyze Button - Enhanced Payman-style */
 .xclv-analyze-btn-inline {
   position: fixed !important;
   z-index: 999999 !important;
-  background: linear-gradient(145deg, #00ff88, #00ccaa) !important;
-  color: #000 !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-  font-size: 12px !important;
+  background: linear-gradient(135deg, var(--xclv-accent), #00ccaa) !important;
+  color: var(--xclv-text-primary) !important;
+  border: 2px solid rgba(5, 49, 57, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 10px 18px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: var(--xclv-font-body) !important;
   cursor: pointer !important;
   box-shadow: 
-    0 4px 12px rgba(0, 255, 136, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.2s ease !important;
+    var(--xclv-shadow-md),
+    var(--xclv-shadow-accent) !important;
+  transition: all var(--xclv-transition) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  letter-spacing: 0.08em !important;
   white-space: nowrap !important;
   user-select: none !important;
-  backdrop-filter: blur(10px) !important;
-  animation: xclvBtnSlideIn 0.2s ease-out !important;
+  backdrop-filter: blur(15px) !important;
+  animation: xclvBtnSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.xclv-analyze-btn-inline::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+  transition: left 0.6s ease !important;
+}
+
+.xclv-analyze-btn-inline:hover::before {
+  left: 100% !important;
 }
 
 /* NEW: Enhanced styling for selected button */
@@ -65,11 +89,12 @@
 }
 
 .xclv-analyze-btn-inline:hover {
-  transform: translateY(-2px) scale(1.05) !important;
+  transform: translateY(-3px) scale(1.05) !important;
   box-shadow: 
-    0 6px 20px rgba(0, 255, 136, 0.4),
-    0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  background: linear-gradient(145deg, #00ffaa, #00ff88) !important;
+    var(--xclv-shadow-lg),
+    0 0 30px rgba(0, 255, 136, 0.5) !important;
+  background: linear-gradient(135deg, #00ffaa, var(--xclv-accent)) !important;
+  border-color: rgba(5, 49, 57, 0.3) !important;
 }
 
 .xclv-analyze-btn-inline.xclv-btn-selected:hover {
@@ -85,23 +110,24 @@
   transition: all 0.1s ease !important;
 }
 
-/* Analysis Result Overlay - FOR HOVER ANALYSIS RESULTS */
+/* Analysis Result Overlay - Enhanced Payman-style */
 .xclv-analysis-overlay {
   position: fixed !important;
   z-index: 1000000 !important;
-  background: linear-gradient(145deg, #1a1a2e, #16213e) !important;
-  border: 2px solid #00ff88 !important;
-  border-radius: 12px !important;
-  padding: 16px !important;
+  background: linear-gradient(135deg, var(--xclv-primary), var(--xclv-primary-light)) !important;
+  border: 2px solid var(--xclv-accent) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
   box-shadow: 
-    0 10px 30px rgba(0, 255, 136, 0.2),
-    0 0 20px rgba(0, 255, 136, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-  min-width: 280px !important;
-  max-width: 320px !important;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-  color: #ffffff !important;
+    var(--xclv-shadow-lg),
+    var(--xclv-shadow-accent),
+    inset 0 1px 0 rgba(241, 199, 214, 0.2) !important;
+  backdrop-filter: blur(20px) !important;
+  font-family: var(--xclv-font-body) !important;
+  animation: xclvOverlaySlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+  min-width: 300px !important;
+  max-width: 350px !important;
+  color: var(--xclv-text-white) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   animation: xclvFadeInUp 0.3s ease-out !important;
   cursor: pointer !important;
@@ -1232,5 +1258,84 @@
   .xclv-analyze-btn-inline,
   .xclv-mode-notification {
     display: none !important;
+  }
+}
+
+/* ===== ENHANCED KEYFRAME ANIMATIONS - PAYMAN STYLE ===== */
+
+@keyframes xclvBtnSlideIn {
+  0% { 
+    transform: translateY(20px) scale(0.8);
+    opacity: 0;
+  }
+  60% { 
+    transform: translateY(-2px) scale(1.05);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes xclvOverlaySlideIn {
+  0% { 
+    transform: translateY(30px) scale(0.9);
+    opacity: 0;
+    filter: blur(5px);
+  }
+  60% { 
+    transform: translateY(-5px) scale(1.02);
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  100% { 
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes xclvFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes xclvPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes xclvGlow {
+  0%, 100% {
+    box-shadow: 
+      var(--xclv-shadow-md),
+      0 0 15px rgba(0, 255, 136, 0.3);
+  }
+  50% {
+    box-shadow: 
+      var(--xclv-shadow-lg),
+      0 0 25px rgba(0, 255, 136, 0.5);
+  }
+}
+
+@keyframes xclvShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }

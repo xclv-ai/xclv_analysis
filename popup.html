@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>XCLV Brand Analysis</title>
+  <link rel="stylesheet" href="shared-styles.css">
   <link rel="stylesheet" href="popup.css">
 </head>
-<body>
+<body class="popup-body">
   <div class="container">
     <!-- Header -->
     <header class="header">
@@ -46,12 +47,11 @@
     <section class="section">
       <h3>Interactive Mode</h3>
       <div class="interactive-controls">
-        <button id="enable-interactive-btn" class="btn secondary small">
-          ✨ Enable Hover Analysis
+        <button id="toggle-interactive-btn" class="btn secondary" data-state="disabled">
+          <span class="btn-icon">✨</span>
+          <span class="btn-text">Enable Click-to-Analyze</span>
         </button>
-        <button id="disable-interactive-btn" class="btn secondary small">
-          ❌ Disable Interactive
-        </button>
+        <p class="help-text">Click elements on any webpage to analyze their tone of voice and brand positioning.</p>
       </div>
     </section>
 
@@ -63,17 +63,7 @@
       </div>
     </section>
 
-    <!-- Settings -->
-    <section class="section">
-      <h3>Settings</h3>
-      <div class="settings-grid">
-        <label class="setting-item">
-          <input type="checkbox" id="hover-insights" checked>
-          <span class="checkmark"></span>
-          Hover Insights
-        </label>
-      </div>
-    </section>
+    <!-- Settings section removed - no longer needed -->
 
     <!-- Collapsible API Settings -->
     <section id="api-settings-section" class="section collapsible collapsed">
@@ -135,7 +125,7 @@
     <!-- Footer -->
     <footer class="footer">
       <div class="version-info">
-        <span>XCLV v1.2.32</span>
+        <span>XCLV v1.2.34</span>
         <span>•</span>
         <span>Powered by Gemini</span>
       </div>

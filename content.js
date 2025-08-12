@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.32
+// Click-to-Analyze Interactive Mode v1.2.33
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.32...');
+  console.log('XCLV: Content script loading v1.2.33...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -1276,11 +1276,18 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         if (tovSelected && archetypesSelected) {
           // Run both analyses
           this.logToDebugPopup('🔄 Running dual analysis...');
-          const [tovResponse, archetypesResponse] = await Promise.all([
-            this.sendAnalysisRequest(text, element, 'tone-of-voice'),
-            this.sendAnalysisRequest(text, element, 'brand-archetypes')
-          ]);
-          response = this.combineAnalysisResults(tovResponse, archetypesResponse);
+          try {
+            const [tovResponse, archetypesResponse] = await Promise.all([
+              this.sendAnalysisRequest(text, element, 'tone-of-voice'),
+              this.sendAnalysisRequest(text, element, 'brand-archetypes')
+            ]);
+            this.logToDebugPopup('✅ Both analyses completed');
+            this.logToDebugPopup(`ToV Success: ${tovResponse?.success}, Archetypes Success: ${archetypesResponse?.success}`);
+            response = this.combineAnalysisResults(tovResponse, archetypesResponse);
+          } catch (error) {
+            this.logToDebugPopup(`❌ Dual analysis error: ${error.message}`);
+            throw error;
+          }
         } else if (tovSelected) {
           response = await this.sendAnalysisRequest(text, element, 'tone-of-voice');
         } else if (archetypesSelected) {
@@ -1502,9 +1509,19 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
             }
           }, (response) => {
             if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message));
+              console.error(`XCLV: ${analysisType} analysis error:`, chrome.runtime.lastError);
+              resolve({
+                success: false,
+                error: chrome.runtime.lastError.message,
+                metadata: { analysisType: analysisType }
+              });
             } else {
-              resolve(response || {});
+              console.log(`XCLV: ${analysisType} analysis response:`, response);
+              resolve(response || {
+                success: false,
+                error: 'Empty response',
+                metadata: { analysisType: analysisType }
+              });
             }
           });
         } catch (error) {
@@ -1515,6 +1532,15 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
 
     combineAnalysisResults(tovResponse, archetypesResponse) {
       try {
+        console.log('XCLV: Combining analysis results');
+        console.log('ToV Response:', tovResponse);
+        console.log('Archetypes Response:', archetypesResponse);
+        
+        // Ensure we have valid response objects
+        if (!tovResponse || !archetypesResponse) {
+          throw new Error('Missing response objects');
+        }
+        
         const combined = {
           success: tovResponse.success && archetypesResponse.success,
           data: {
@@ -1522,10 +1548,10 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
             brandArchetypes: archetypesResponse.data || null
           },
           metadata: {
-            ...tovResponse.metadata,
+            ...(tovResponse.metadata || {}),
             analysisType: 'combined',
-            tovModel: tovResponse.metadata?.model,
-            archetypesModel: archetypesResponse.metadata?.model
+            tovModel: tovResponse.metadata?.model || 'Unknown',
+            archetypesModel: archetypesResponse.metadata?.model || 'Unknown'
           }
         };
         
@@ -1537,12 +1563,17 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
           combined.error = `TOV: ${tovResponse.error || 'OK'} | Archetypes: ${archetypesResponse.error || 'OK'}`;
         }
         
+        console.log('XCLV: Combined result:', combined);
         return combined;
       } catch (error) {
+        console.error('XCLV: Error combining results:', error);
         return {
           success: false,
           error: `Failed to combine results: ${error.message}`,
-          data: null
+          data: null,
+          metadata: {
+            analysisType: 'combined'
+          }
         };
       }
     }

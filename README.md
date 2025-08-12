@@ -4,27 +4,29 @@
 
 Transform your brand analysis workflow with real-time insights into tone of voice, brand archetypes, and message clarity for any webpage. Built for the LiveBranding approach - treating brands as dynamic, evolving systems.
 
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore) [![Gemini 2.5](https://img.shields.io/badge/Powered%20by-Gemini%202.5-blue)](https://ai.google.dev/) [![LiveBranding](https://img.shields.io/badge/Methodology-LiveBranding-orange)](https://xclv.ai) [![Version](https://img.shields.io/badge/Version-1.2.31-brightgreen)](https://github.com/xclv-ai/xclv_analysis/releases)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore) [![Gemini 2.5](https://img.shields.io/badge/Powered%20by-Gemini%202.5-blue)](https://ai.google.dev/) [![LiveBranding](https://img.shields.io/badge/Methodology-LiveBranding-orange)](https://xclv.ai) [![Version](https://img.shields.io/badge/Version-1.2.34-brightgreen)](https://github.com/xclv-ai/xclv_analysis/releases)
 
-## 🎉 **Latest Update - v1.2.31: Production Ready with Optimized Token Limits**
+## 🎉 **Latest Update - v1.2.34: Dual Analysis System Ready**
 
-**COMPLETE SYSTEM NOW FULLY OPERATIONAL**: Comprehensive tone-of-voice analysis with Nielsen Norman Group framework successfully implemented!
+**COMPLETE DUAL ANALYSIS SYSTEM NOW OPERATIONAL**: Comprehensive tone-of-voice + brand archetypes analysis with Nielsen Norman Group + Jung's Archetypal frameworks!
 
-### ✅ What's Working in v1.2.31:
-- **🎯 Tone-of-Voice Analysis**: Nielsen Norman Group Core Four Dimensions framework
-- **🧠 Secure API Integration**: XOR encrypted Gemini API key storage
-- **🔍 Manual Analysis Control**: Analysis only runs when "RUN ANALYSIS" is clicked
-- **📊 Comprehensive Debug System**: Real-time logging with API requests/responses
-- **⚡ Optimized Token Limits**: 32,768 tokens (50% of Flash's 65K capacity)
-- **🎨 Richard Feynman Style**: Strategic insights with quoted evidence
-- **🛡️ CSP Compliant**: No inline scripts, proper event handling
+### ✅ What's Working in v1.2.34:
+- **🎯 Dual Analysis System**: Choose Tone-of-Voice, Brand Archetypes, or Both
+- **🎯 Nielsen Norman Group ToV**: Complete Core Four Dimensions framework
+- **🏰 Jung's Brand Archetypes**: 12 classic archetypes with percentage mix analysis
+- **🧠 Fixed API Key System**: XOR encrypted storage with proper decryption
+- **🔍 Manual Analysis Control**: Analysis runs only when "RUN ANALYSIS" is clicked
+- **📊 Enhanced Debug System**: Separate results for individual and combined analyses
+- **⚡ Optimized Token Limits**: 32,768 tokens for comprehensive analysis
+- **🛡️ Production Ready**: Fully tested dual analysis with error handling
 
 ### 📈 User Workflow (FULLY FUNCTIONAL):
-1. **Configure API Settings** → Add Gemini API key with XOR encryption ✅
+1. **Configure API Settings** → Add Gemini API key with secure XOR encryption ✅
 2. **Enable Interactive Mode** → "Enable Hover Analysis" checkbox ✅  
 3. **Click Text Elements** → Select content for analysis ✅
-4. **Manual Analysis Control** → Click "RUN ANALYSIS" in debug popup ✅
-5. **Comprehensive Results** → Nielsen Norman Group analysis with strategic insights ✅
+4. **Choose Analysis Types** → Select Tone-of-Voice, Brand Archetypes, or Both ✅
+5. **Run Analysis** → Click "RUN ANALYSIS" for comprehensive results ✅
+6. **View Dual Results** → Separate sections for ToV and Archetypes analysis ✅
 
 ---
 
