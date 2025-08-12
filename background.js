@@ -258,11 +258,10 @@ class BrandAnalysisService {
       throw new Error('Gemini API key not configured');
     }
 
-    const systemPrompt = this.promptManager.getPrompt('text-element-analysis', {
-      text: data.text,
-      element: data.element,
-      page: data.page,
-      context: data.context
+    // Use tone-of-voice-analysis prompt for interactive element analysis
+    const systemPrompt = this.promptManager.getPrompt('tone-of-voice-analysis', {
+      url: data.page?.url || 'Unknown URL',
+      text: data.text
     });
     
     try {
@@ -277,7 +276,7 @@ class BrandAnalysisService {
           timestamp: new Date().toISOString(),
           element: data.element,
           url: data.page?.url,
-          promptType: 'text-element-analysis'
+          promptType: 'tone-of-voice-analysis'
         }
       };
     } catch (error) {
@@ -292,17 +291,28 @@ class BrandAnalysisService {
           timestamp: new Date().toISOString(),
           element: data.element,
           url: data.page?.url,
-          promptType: 'text-element-analysis'
+          promptType: 'tone-of-voice-analysis'
         }
       };
     }
   }
 
-  async callGeminiAPI(prompt, data) {
+  async callGeminiAPI(systemPrompt, data) {
+    // Structure the request with system prompt and user content
+    const userContent = `**WEBSITE:** ${data.page?.url || 'Unknown URL'}
+**CONTENT TO ANALYZE:** ${data.text}
+
+Analyze this web content for brand tone of voice using the Nielsen Norman Group's Core Four Dimensions framework.`;
+
     const requestBody = {
+      system_instruction: {
+        parts: [{
+          text: systemPrompt
+        }]
+      },
       contents: [{
         parts: [{
-          text: prompt
+          text: userContent
         }]
       }],
       generationConfig: {

@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.25
+// Click-to-Analyze Interactive Mode v1.2.28
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.25...');
+  console.log('XCLV: Content script loading v1.2.28...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -365,7 +365,8 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       this.analysisOverlay = null;
       this.analysisCache = new Map();
       this.isAnalyzing = false;
-      this.debugMode = true;
+      this.debugMode = true; // Auto-enable debug mode
+      this.debugWindow = null; // Reference to debug popup window
       
       console.log('XCLV: InteractiveContentAnalyzer initialized with click-to-analyze mode');
     }
@@ -945,6 +946,11 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         if (response && response.success) {
           this.analysisCache.set(text, response.data);
           this.showAnalysisResult(element, response.data);
+          
+          // Update debug popup with results if open
+          if (this.debugMode && this.debugWindow && !this.debugWindow.closed) {
+            this.updateDebugPopupWithResults(response);
+          }
         } else {
           throw new Error(response?.error || 'Analysis failed');
         }
@@ -972,60 +978,217 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
           timestamp: new Date().toISOString()
         };
 
-        // Create debug popup window
-        const debugWindow = window.open('', 'xclv-debug', 'width=600,height=400,scrollbars=yes,resizable=yes');
+        // Create debug popup window with tabbed interface
+        this.debugWindow = window.open('', 'xclv-debug', 'width=800,height=600,scrollbars=yes,resizable=yes');
         
-        if (debugWindow) {
-          debugWindow.document.write(`
+        if (this.debugWindow) {
+          this.debugWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
               <title>XCLV Debug - Element Analysis</title>
               <style>
-                body { font-family: monospace; margin: 20px; background: #1a1a2e; color: #fff; }
-                h2 { color: #00ff88; border-bottom: 1px solid #00ff88; padding-bottom: 5px; }
-                .section { margin: 20px 0; padding: 10px; background: #0f0f23; border-radius: 5px; }
+                body { font-family: monospace; margin: 0; background: #1a1a2e; color: #fff; }
+                .header { background: #2563eb; padding: 15px; color: white; border-bottom: 2px solid #00ff88; }
+                .tabs { display: flex; background: #0f0f23; border-bottom: 1px solid #00ff88; }
+                .tab { padding: 12px 20px; cursor: pointer; border-right: 1px solid #333; transition: background 0.2s; }
+                .tab:hover { background: #333; }
+                .tab.active { background: #00ff88; color: #000; font-weight: bold; }
+                .content { padding: 20px; height: calc(100vh - 120px); overflow-y: auto; }
+                .tab-panel { display: none; }
+                .tab-panel.active { display: block; }
+                .section { margin: 20px 0; padding: 15px; background: #0f0f23; border-radius: 8px; border: 1px solid #333; }
                 .key { color: #00ff88; font-weight: bold; }
                 .value { color: #e0e0e0; }
-                pre { background: #000; padding: 10px; border-radius: 5px; overflow-x: auto; }
+                pre { 
+                  background: #000; 
+                  padding: 15px; 
+                  border-radius: 8px; 
+                  overflow: auto; 
+                  font-size: 12px; 
+                  line-height: 1.4; 
+                  max-height: 200px;
+                  min-height: 120px;
+                  word-wrap: break-word;
+                  white-space: pre-wrap;
+                }
+                .loading { text-align: center; padding: 50px; color: #888; }
+                .json-result { background: #0a0a0a; color: #00ff88; font-size: 13px; }
               </style>
             </head>
             <body>
-              <h2>🎯 XCLV Element Analysis Debug</h2>
-              
-              <div class="section">
-                <h3>Element Details</h3>
-                <p><span class="key">Tag:</span> <span class="value">${debugData.element.tagName}</span></p>
-                <p><span class="key">ID:</span> <span class="value">${debugData.element.id || 'None'}</span></p>
-                <p><span class="key">Classes:</span> <span class="value">${debugData.element.className || 'None'}</span></p>
-                <p><span class="key">Text Length:</span> <span class="value">${text.length} characters</span></p>
+              <div class="header">
+                <h2 style="margin: 0;">🎯 XCLV Element Analysis Debug</h2>
+                <p style="margin: 5px 0 0 0; opacity: 0.8;">${debugData.element.tagName} - ${text.substring(0, 100)}...</p>
               </div>
-              
-              <div class="section">
-                <h3>Text Content</h3>
-                <pre>${text}</pre>
+
+              <div class="tabs">
+                <div class="tab active" data-tab="element-tab">Element</div>
+                <div class="tab" data-tab="content-tab">Content</div>
+                <div class="tab" data-tab="context-tab">Context</div>
+                <div class="tab" data-tab="results-tab">Results</div>
               </div>
-              
-              <div class="section">
-                <h3>Context</h3>
-                <p><span class="key">Parent:</span> <span class="value">${debugData.context.parent}</span></p>
-                <p><span class="key">Siblings:</span> <span class="value">${debugData.context.siblings}</span></p>
-                <p><span class="key">URL:</span> <span class="value">${debugData.url}</span></p>
-                <p><span class="key">Timestamp:</span> <span class="value">${debugData.timestamp}</span></p>
-              </div>
-              
-              <div class="section">
-                <h3>Raw HTML</h3>
-                <pre>${debugData.element.innerHTML}</pre>
+
+              <div class="content">
+                <div id="element-tab" class="tab-panel active">
+                  <div class="section">
+                    <h3>Element Details</h3>
+                    <p><span class="key">Tag:</span> <span class="value">${debugData.element.tagName}</span></p>
+                    <p><span class="key">ID:</span> <span class="value">${debugData.element.id || 'None'}</span></p>
+                    <p><span class="key">Classes:</span> <span class="value">${debugData.element.className || 'None'}</span></p>
+                    <p><span class="key">Text Length:</span> <span class="value">${text.length} characters</span></p>
+                  </div>
+                  
+                  <div class="section">
+                    <h3>Raw HTML</h3>
+                    <pre>${debugData.element.innerHTML}</pre>
+                  </div>
+                </div>
+
+                <div id="content-tab" class="tab-panel">
+                  <div class="section">
+                    <h3>Analyzed Text Content</h3>
+                    <pre>${text}</pre>
+                  </div>
+                </div>
+
+                <div id="context-tab" class="tab-panel">
+                  <div class="section">
+                    <h3>Page Context</h3>
+                    <p><span class="key">URL:</span> <span class="value">${debugData.url}</span></p>
+                    <p><span class="key">Timestamp:</span> <span class="value">${debugData.timestamp}</span></p>
+                    <p><span class="key">Parent:</span> <span class="value">${debugData.context.parent}</span></p>
+                    <p><span class="key">Siblings:</span> <span class="value">${debugData.context.siblings}</span></p>
+                  </div>
+                </div>
+
+                <div id="results-tab" class="tab-panel">
+                  <div class="loading">⏳ Waiting for analysis results...</div>
+                </div>
               </div>
             </body>
             </html>
           `);
-          debugWindow.document.close();
+          this.debugWindow.document.close();
+          
+          // Add event listeners for tabs (CSP-compliant way) - with delay to ensure DOM is ready
+          setTimeout(() => {
+            this.setupDebugPopupTabs();
+          }, 100);
         }
         
       } catch (error) {
         console.error('XCLV: Failed to show debug popup:', error);
+      }
+    }
+
+    setupDebugPopupTabs() {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) {
+          console.log('XCLV: Debug window not available for tab setup');
+          return;
+        }
+        
+        const tabs = this.debugWindow.document.querySelectorAll('.tab');
+        console.log('XCLV: Found', tabs.length, 'tabs to setup');
+        
+        tabs.forEach((tab, index) => {
+          console.log('XCLV: Setting up tab', index, tab.getAttribute('data-tab'));
+          tab.addEventListener('click', (event) => {
+            event.preventDefault();
+            const targetTab = tab.getAttribute('data-tab');
+            console.log('XCLV: Tab clicked:', targetTab);
+            this.showDebugTab(targetTab);
+          });
+        });
+        
+        console.log('XCLV: Tab event listeners setup complete');
+        
+      } catch (error) {
+        console.error('XCLV: Failed to setup debug popup tabs:', error);
+      }
+    }
+
+    showDebugTab(tabName) {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) {
+          console.log('XCLV: Debug window not available for tab switch');
+          return;
+        }
+        
+        console.log('XCLV: Switching to tab:', tabName);
+        
+        // Hide all panels
+        const panels = this.debugWindow.document.querySelectorAll('.tab-panel');
+        console.log('XCLV: Found', panels.length, 'panels');
+        panels.forEach(p => p.classList.remove('active'));
+        
+        // Remove active from all tabs
+        const tabs = this.debugWindow.document.querySelectorAll('.tab');
+        console.log('XCLV: Found', tabs.length, 'tab buttons');
+        tabs.forEach(t => t.classList.remove('active'));
+        
+        // Show selected panel
+        const targetPanel = this.debugWindow.document.getElementById(tabName);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+          console.log('XCLV: Activated panel:', tabName);
+        } else {
+          console.log('XCLV: Panel not found:', tabName);
+        }
+        
+        // Make tab active
+        const targetTab = this.debugWindow.document.querySelector(`[data-tab="${tabName}"]`);
+        if (targetTab) {
+          targetTab.classList.add('active');
+          console.log('XCLV: Activated tab button:', tabName);
+        } else {
+          console.log('XCLV: Tab button not found:', tabName);
+        }
+        
+      } catch (error) {
+        console.error('XCLV: Failed to show debug tab:', error);
+      }
+    }
+
+    updateDebugPopupWithResults(response) {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) return;
+
+        const resultsTab = this.debugWindow.document.getElementById('results-tab');
+        if (!resultsTab) return;
+
+        const resultsHTML = `
+          <div class="section">
+            <h3>✅ Analysis Complete</h3>
+            <p><span class="key">Model:</span> <span class="value">${response.metadata?.model || 'Unknown'}</span></p>
+            <p><span class="key">Prompt Type:</span> <span class="value">${response.metadata?.promptType || 'Unknown'}</span></p>
+            <p><span class="key">Timestamp:</span> <span class="value">${response.metadata?.timestamp || 'Unknown'}</span></p>
+          </div>
+          
+          <div class="section">
+            <h3>🎯 Analysis Results</h3>
+            <pre class="json-result">${JSON.stringify(response.data, null, 2)}</pre>
+          </div>
+          
+          <div class="section">
+            <h3>📝 System Prompt</h3>
+            <pre>${response.systemPrompt || 'No system prompt available'}</pre>
+          </div>
+          
+          <div class="section">
+            <h3>📊 Request Data</h3>
+            <pre class="json-result">${JSON.stringify(response.parsedContent, null, 2)}</pre>
+          </div>
+        `;
+
+        resultsTab.innerHTML = resultsHTML;
+        
+        // Auto-switch to results tab using the new method
+        this.showDebugTab('results-tab');
+        
+      } catch (error) {
+        console.error('XCLV: Failed to update debug popup with results:', error);
       }
     }
 
@@ -1246,7 +1409,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.25');
+      console.log('XCLV: Content Controller created v1.2.28');
     }
 
     initialize() {
@@ -1447,7 +1610,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.25');
+    console.log('XCLV: Content Controller initialized successfully v1.2.28');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1507,6 +1670,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.25 loaded successfully');
+console.log('XCLV: Content script v1.2.28 loaded successfully');
 
 } // End of duplicate loading check

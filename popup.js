@@ -2,6 +2,39 @@
 // Professional UI with working analysis panel and proper settings
 // KEEPING GEMINI 2.5 MODEL AS DEFAULT
 
+class XCLVSecureStorage {
+  // Simple encryption for API key storage
+  static encrypt(text) {
+    try {
+      // Base64 encode with a simple key rotation for basic obfuscation
+      const key = 'xclv2025';
+      let result = '';
+      for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      return btoa(result);
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      return text; // Fallback to plaintext
+    }
+  }
+
+  static decrypt(encryptedText) {
+    try {
+      const key = 'xclv2025';
+      const decoded = atob(encryptedText);
+      let result = '';
+      for (let i = 0; i < decoded.length; i++) {
+        result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      return result;
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      return encryptedText; // Assume it's plaintext
+    }
+  }
+}
+
 class XCLVPopupController {
   constructor() {
     this.isInitialized = false;
@@ -350,21 +383,29 @@ class XCLVPopupController {
         throw new Error('API key appears to be too short');
       }
 
-      const result = await chrome.storage.local.set({
-        geminiApiKey: apiKey,
-        selectedModel: selectedModel || 'gemini-2.5-flash' // KEEP 2.5 AS DEFAULT
+      // Encrypt API key before storage
+      const encryptedApiKey = XCLVSecureStorage.encrypt(apiKey);
+
+      await chrome.storage.local.set({
+        xclvApiKey: encryptedApiKey,
+        xclvSelectedModel: selectedModel || 'gemini-2.5-flash',
+        xclvStorageVersion: '1.2.25' // Track encryption version
       });
 
-      // Update background service
+      // Send decrypted key to background service (runtime only)
       await chrome.runtime.sendMessage({
         action: 'updateApiSettings',
         data: {
-          apiKey: apiKey,
-          selectedModel: selectedModel || 'gemini-2.5-flash' // KEEP 2.5 AS DEFAULT
+          apiKey: apiKey, // Send plain for runtime use
+          selectedModel: selectedModel || 'gemini-2.5-flash'
         }
       });
 
-      this.showNotification('API settings saved successfully!', 'success');
+      // Clear input field for security
+      document.getElementById('api-key-input').value = '';
+      document.getElementById('api-key-input').placeholder = 'API key saved securely';
+
+      this.showNotification('API settings saved and encrypted successfully!', 'success');
 
       // Auto-collapse API section after successful save
       setTimeout(() => {
@@ -570,27 +611,62 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
     try {
       const result = await chrome.storage.local.get([
         'hoverInsights',
-        'geminiApiKey',
-        'selectedModel'
+        'xclvApiKey',      // New encrypted key
+        'xclvSelectedModel', // New model setting  
+        'geminiApiKey',    // Legacy key for migration
+        'selectedModel'    // Legacy model for migration
       ]);
 
       this.settings = {
         hoverInsights: result.hoverInsights !== false // Default true
       };
 
-      // Populate API settings
-      if (result.geminiApiKey) {
+      // Handle API key (with migration from legacy storage)
+      let decryptedApiKey = '';
+      if (result.xclvApiKey) {
+        // New encrypted storage
+        try {
+          decryptedApiKey = XCLVSecureStorage.decrypt(result.xclvApiKey);
+          const apiKeyInput = document.getElementById('api-key-input');
+          if (apiKeyInput) {
+            apiKeyInput.placeholder = '••••••••••••••••••••• (saved securely)';
+          }
+        } catch (error) {
+          console.warn('Failed to decrypt API key:', error);
+        }
+      } else if (result.geminiApiKey) {
+        // Migrate from legacy plaintext storage
+        decryptedApiKey = result.geminiApiKey;
+        const encryptedKey = XCLVSecureStorage.encrypt(decryptedApiKey);
+        await chrome.storage.local.set({
+          xclvApiKey: encryptedKey,
+          xclvSelectedModel: result.selectedModel || 'gemini-2.5-flash'
+        });
+        // Remove old keys
+        await chrome.storage.local.remove(['geminiApiKey', 'selectedModel']);
+        
         const apiKeyInput = document.getElementById('api-key-input');
         if (apiKeyInput) {
-          apiKeyInput.value = result.geminiApiKey;
+          apiKeyInput.placeholder = 'API key migrated to secure storage';
         }
       }
 
-      if (result.selectedModel) {
-        const modelSelect = document.getElementById('model-select');
-        if (modelSelect) {
-          modelSelect.value = result.selectedModel;
-        }
+      // Handle model selection
+      const selectedModel = result.xclvSelectedModel || result.selectedModel || 'gemini-2.5-flash';
+      const modelSelect = document.getElementById('model-select');
+      if (modelSelect) {
+        modelSelect.value = selectedModel;
+      }
+
+      // Send current settings to background service
+      if (decryptedApiKey) {
+        chrome.runtime.sendMessage({
+          action: 'updateApiSettings',
+          data: {
+            apiKey: decryptedApiKey,
+            selectedModel: selectedModel
+          }
+        });
       }
 
     } catch (error) {
