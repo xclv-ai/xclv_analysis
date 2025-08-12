@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.21
+// Click-to-Analyze Interactive Mode v1.2.25
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.21...');
+  console.log('XCLV: Content script loading v1.2.25...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -371,12 +371,15 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
     }
 
     enable() {
-      if (this.isHoverMode) return;
+      if (this.isHoverMode) {
+        console.log('🔄 XCLV: Enable called but hover mode already active');
+        return;
+      }
       
       this.isHoverMode = true;
       this.setupMouseEvents();
       this.showModeNotification('Click-to-analyze mode enabled - hover to highlight, click to select');
-      console.log('XCLV: Click-to-analyze hover mode ENABLED');
+      console.log('✅ XCLV: Click-to-analyze hover mode ENABLED - isHoverMode:', this.isHoverMode);
     }
 
     disable() {
@@ -466,19 +469,22 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       }
     }
 
-    // ENHANCED: Much more robust click handling
+    // ENHANCED: Much more robust click handling with DEBUG
     handleClick(event) {
       console.log('🔍 XCLV: DETAILED Click event detected:', {
         target: event.target.tagName,
         targetClass: event.target.className,
         targetId: event.target.id,
+        targetText: event.target.textContent?.substring(0, 50),
         isAnalyzableElement: this.isAnalyzableElement(event.target),
         isXCLVElement: this.isXCLVElement(event.target),
         isHoverMode: this.isHoverMode,
         isAnalyzing: this.isAnalyzing,
         eventPhase: event.eventPhase,
         bubbles: event.bubbles,
-        cancelable: event.cancelable
+        cancelable: event.cancelable,
+        currentSelectedElement: this.selectedElement?.tagName,
+        analyzeButtonExists: !!this.analyzeButton
       });
 
       // PRIORITY 1: Handle analyze button clicks with multiple detection methods
@@ -579,20 +585,22 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
 
     // Select element and show analyze button
     selectElement(element) {
-      console.log('XCLV: selectElement called for:', element.tagName);
+      console.log('🎯 XCLV: selectElement called for:', element.tagName, 'Text:', element.textContent?.substring(0, 50));
       this.selectedElement = element;
       
       // Add selection styling (different from hover)
       element.classList.add('xclv-selected');
       element.classList.remove('xclv-highlighted'); // Remove hover highlight
       
+      console.log('🎯 XCLV: About to show analyze button...');
       // Show the analyze button attached to this element
       this.showAnalyzeButton(element);
       
-      console.log('XCLV: Element selected:', {
+      console.log('🎯 XCLV: Element selected and button creation attempted:', {
         tag: element.tagName,
         text: element.textContent.trim().substring(0, 50) + '...',
-        hasClass: element.classList.contains('xclv-selected')
+        hasClass: element.classList.contains('xclv-selected'),
+        buttonCreated: !!this.analyzeButton
       });
     }
 
@@ -608,27 +616,24 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       console.log('XCLV: Element deselected');
     }
 
-    // FIXED: Better element checking to prevent TypeError
+    // FIXED: Better element checking - highlighted elements should be clickable
     isXCLVElement(element) {
       try {
         // Check for null/undefined element
         if (!element) return false;
         
-        // Check closest selectors
+        // Check closest selectors for UI elements (these should be skipped)
         if (element.closest('#xclv-analysis-panel') ||
             element.closest('.xclv-analyze-btn-inline') ||
-            element.closest('.xclv-analysis-overlay')) {
+            element.closest('.xclv-analysis-overlay') ||
+            element.closest('.xclv-mode-notification')) {
           return true;
         }
         
-        // Check classList existence before using contains
-        if (element.classList && (
-            element.classList.contains('xclv-highlighted') ||
-            element.classList.contains('xclv-selected'))) {
-          return true;
-        }
+        // FIXED: Don't skip highlighted/selected elements - they should be clickable!
+        // Only skip if it's our UI button or panel elements
         
-        // Safe check for element.id and startsWith
+        // Safe check for element.id and startsWith (skip our UI elements)
         if (element.id && typeof element.id === 'string' && element.id.startsWith('xclv-')) {
           return true;
         }
@@ -705,6 +710,8 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
     // BULLETPROOF: Enhanced analyze button positioning with fallback strategies
     showAnalyzeButton(element) {
       console.log('🔨 XCLV: showAnalyzeButton called for:', element.tagName);
+      console.log('🔨 XCLV: Element text:', element.textContent?.substring(0, 100));
+      console.log('🔨 XCLV: Element visible:', this.isElementVisible(element));
       
       this.hideAnalyzeButton(); // Remove any existing button
 
@@ -1026,12 +1033,20 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       return new Promise((resolve, reject) => {
         try {
           chrome.runtime.sendMessage({
-            action: 'analyzeContent',
+            action: 'analyzeTextElement', // FIXED: Use correct message type for element analysis
             data: {
               text: text,
-              elementType: element.tagName.toLowerCase(),
-              context: this.getElementContext(element),
-              url: window.location.href
+              element: {
+                tagName: element.tagName.toLowerCase(),
+                className: element.className,
+                id: element.id,
+                textLength: text.length
+              },
+              page: {
+                title: document.title,
+                url: window.location.href
+              },
+              context: this.getElementContext(element)
             }
           }, (response) => {
             if (chrome.runtime.lastError) {
@@ -1231,7 +1246,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.21');
+      console.log('XCLV: Content Controller created v1.2.25');
     }
 
     initialize() {
@@ -1432,7 +1447,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.21');
+    console.log('XCLV: Content Controller initialized successfully v1.2.25');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1492,6 +1507,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.21 loaded successfully');
+console.log('XCLV: Content script v1.2.25 loaded successfully');
 
 } // End of duplicate loading check
