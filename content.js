@@ -1011,6 +1011,7 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       let positionStrategy = 'default';
       
       // Strategy 1: Below element (preferred)
+      // For fixed positioning, use viewport coordinates (rect.left/rect.bottom)
       buttonX = rect.left;
       buttonY = rect.bottom + 8;
       
@@ -1050,9 +1051,18 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         }
       }
       
-      // Ensure positions are within bounds (final safety check)
-      buttonX = Math.max(padding, Math.min(buttonX, window.innerWidth - buttonWidth - padding));
-      buttonY = Math.max(padding, Math.min(buttonY, window.innerHeight - buttonHeight - padding));
+      // Enhanced safety checks for positioning
+      // Ensure button doesn't go off-screen and has proper viewport positioning
+      const maxX = window.innerWidth - buttonWidth - padding;
+      const maxY = window.innerHeight - buttonHeight - padding;
+      
+      buttonX = Math.max(padding, Math.min(buttonX, maxX));
+      buttonY = Math.max(padding, Math.min(buttonY, maxY));
+      
+      // Additional check for very narrow viewports
+      if (buttonWidth + (2 * padding) > window.innerWidth) {
+        buttonX = (window.innerWidth - buttonWidth) / 2;
+      }
       
       // Apply positioning
       this.analyzeButton.style.position = 'fixed';
