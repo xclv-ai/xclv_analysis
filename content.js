@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.20
+// Click-to-Analyze Interactive Mode v1.2.21
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.20...');
+  console.log('XCLV: Content script loading v1.2.21...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -702,20 +702,91 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       }
     }
 
-    // ENHANCED: Show analyze button with multiple click handlers
+    // BULLETPROOF: Enhanced analyze button positioning with fallback strategies
     showAnalyzeButton(element) {
       console.log('🔨 XCLV: showAnalyzeButton called for:', element.tagName);
       
       this.hideAnalyzeButton(); // Remove any existing button
 
       const rect = element.getBoundingClientRect();
-      console.log('XCLV: Element rect:', rect);
+      const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      
+      console.log('🔨 XCLV: Element positioning data:', {
+        rect: rect,
+        scrollX: scrollX,
+        scrollY: scrollY,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight
+      });
       
       // Create button element
       this.analyzeButton = document.createElement('button');
       this.analyzeButton.className = 'xclv-analyze-btn-inline xclv-btn-selected';
       this.analyzeButton.innerHTML = '🔍 ANALYZE CONTENT';
       this.analyzeButton.title = 'Click to analyze this selected text element';
+      
+      // Button dimensions
+      const buttonWidth = 160;
+      const buttonHeight = 40;
+      const padding = 10; // Safety margin from viewport edges
+      
+      // ENHANCED: Smart positioning with multiple fallback strategies
+      let buttonX, buttonY;
+      let positionStrategy = 'default';
+      
+      // Strategy 1: Below element (preferred)
+      buttonX = rect.left;
+      buttonY = rect.bottom + 8;
+      
+      // Check boundaries and adjust
+      if (buttonX + buttonWidth > window.innerWidth - padding) {
+        buttonX = window.innerWidth - buttonWidth - padding;
+        positionStrategy = 'right-adjusted';
+      }
+      
+      if (buttonX < padding) {
+        buttonX = padding;
+        positionStrategy = 'left-adjusted';
+      }
+      
+      if (buttonY + buttonHeight > window.innerHeight - padding) {
+        // Strategy 2: Above element
+        buttonY = rect.top - buttonHeight - 8;
+        positionStrategy = 'above';
+        
+        if (buttonY < padding) {
+          // Strategy 3: Overlay on element (last resort)
+          buttonY = rect.top + (rect.height - buttonHeight) / 2;
+          buttonX = rect.left + rect.width + 8;
+          positionStrategy = 'overlay-right';
+          
+          if (buttonX + buttonWidth > window.innerWidth - padding) {
+            buttonX = rect.left - buttonWidth - 8;
+            positionStrategy = 'overlay-left';
+            
+            if (buttonX < padding) {
+              // Strategy 4: Center screen fallback
+              buttonX = (window.innerWidth - buttonWidth) / 2;
+              buttonY = (window.innerHeight - buttonHeight) / 2;
+              positionStrategy = 'center-fallback';
+            }
+          }
+        }
+      }
+      
+      // Ensure positions are within bounds (final safety check)
+      buttonX = Math.max(padding, Math.min(buttonX, window.innerWidth - buttonWidth - padding));
+      buttonY = Math.max(padding, Math.min(buttonY, window.innerHeight - buttonHeight - padding));
+      
+      // Apply positioning
+      this.analyzeButton.style.position = 'fixed';
+      this.analyzeButton.style.left = `${buttonX}px`;
+      this.analyzeButton.style.top = `${buttonY}px`;
+      this.analyzeButton.style.zIndex = '999999';
+      
+      console.log('🔨 XCLV: Button positioning strategy:', positionStrategy);
+      console.log('🔨 XCLV: Final button position:', { x: buttonX, y: buttonY });
       
       // CRITICAL: Multiple event binding strategies
       
@@ -754,49 +825,79 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         e.stopPropagation();
       }, true);
       
-      // Position the button next to the element
-      this.analyzeButton.style.position = 'fixed';
-      this.analyzeButton.style.left = `${rect.left}px`;
-      this.analyzeButton.style.top = `${rect.bottom + 8}px`;
-      this.analyzeButton.style.zIndex = '999999';
-      
-      // Ensure button stays in viewport
-      const buttonWidth = 160;
-      const buttonHeight = 40;
-      
-      if (rect.left + buttonWidth > window.innerWidth) {
-        this.analyzeButton.style.left = `${window.innerWidth - buttonWidth - 10}px`;
-      }
-      
-      if (rect.bottom + buttonHeight > window.innerHeight) {
-        this.analyzeButton.style.top = `${rect.top - buttonHeight - 8}px`;
-      }
-      
-      // Force display and visibility
+      // Enhanced styling and visibility
       this.analyzeButton.style.display = 'block';
       this.analyzeButton.style.visibility = 'visible';
       this.analyzeButton.style.opacity = '1';
       this.analyzeButton.style.pointerEvents = 'auto';
       this.analyzeButton.style.cursor = 'pointer';
       
+      // CRITICAL: Add visual debugging helper
+      if (this.debugMode) {
+        this.analyzeButton.style.boxShadow = '0 0 10px red'; // Temporary debug indicator
+        console.log('🔨 XCLV: DEBUG MODE - Button has red glow for visibility');
+      }
+      
       // Add to DOM
       document.body.appendChild(this.analyzeButton);
       
-      console.log('🔨 XCLV: Analyze button created with multiple event handlers:', {
-        element: element.tagName,
-        buttonElement: this.analyzeButton,
-        buttonInDOM: document.body.contains(this.analyzeButton),
-        buttonRect: this.analyzeButton.getBoundingClientRect()
-      });
-      
-      // Test button existence after a moment
+      // ENHANCED: Comprehensive verification
       setTimeout(() => {
         if (this.analyzeButton && document.body.contains(this.analyzeButton)) {
-          console.log('✅ XCLV: Button confirmed in DOM and ready for clicks');
+          const buttonRect = this.analyzeButton.getBoundingClientRect();
+          const isVisible = buttonRect.width > 0 && buttonRect.height > 0;
+          const isInViewport = buttonRect.left >= 0 && 
+                              buttonRect.top >= 0 && 
+                              buttonRect.right <= window.innerWidth && 
+                              buttonRect.bottom <= window.innerHeight;
+          
+          console.log('✅ XCLV: Button verification:', {
+            exists: true,
+            isVisible: isVisible,
+            isInViewport: isInViewport,
+            computedStyle: {
+              display: window.getComputedStyle(this.analyzeButton).display,
+              visibility: window.getComputedStyle(this.analyzeButton).visibility,
+              opacity: window.getComputedStyle(this.analyzeButton).opacity,
+              zIndex: window.getComputedStyle(this.analyzeButton).zIndex
+            },
+            finalRect: buttonRect,
+            strategy: positionStrategy
+          });
+          
+          if (!isVisible || !isInViewport) {
+            console.error('❌ XCLV: Button positioning failed!', {
+              isVisible, isInViewport, buttonRect, strategy: positionStrategy
+            });
+          } else {
+            console.log('🎉 XCLV: Button successfully positioned and visible!');
+          }
         } else {
           console.error('❌ XCLV: Button not found in DOM after creation');
         }
       }, 100);
+    }
+
+    // Button visibility checker utility
+    verifyButtonVisibility() {
+      if (this.analyzeButton) {
+        const rect = this.analyzeButton.getBoundingClientRect();
+        const style = window.getComputedStyle(this.analyzeButton);
+        return {
+          exists: document.body.contains(this.analyzeButton),
+          visible: rect.width > 0 && rect.height > 0,
+          inViewport: rect.left >= 0 && rect.top >= 0 && 
+                     rect.right <= window.innerWidth && 
+                     rect.bottom <= window.innerHeight,
+          style: {
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            zIndex: style.zIndex
+          }
+        };
+      }
+      return { exists: false };
     }
 
     hideAnalyzeButton() {
@@ -1130,7 +1231,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.20');
+      console.log('XCLV: Content Controller created v1.2.21');
     }
 
     initialize() {
@@ -1331,7 +1432,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.20');
+    console.log('XCLV: Content Controller initialized successfully v1.2.21');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1391,6 +1492,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.20 loaded successfully');
+console.log('XCLV: Content script v1.2.21 loaded successfully');
 
 } // End of duplicate loading check
