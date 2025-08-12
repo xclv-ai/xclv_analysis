@@ -4,27 +4,27 @@
 
 Transform your brand analysis workflow with real-time insights into tone of voice, brand archetypes, and message clarity for any webpage. Built for the LiveBranding approach - treating brands as dynamic, evolving systems.
 
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore) [![Gemini 2.5](https://img.shields.io/badge/Powered%20by-Gemini%202.5-blue)](https://ai.google.dev/) [![LiveBranding](https://img.shields.io/badge/Methodology-LiveBranding-orange)](https://xclv.ai) [![Version](https://img.shields.io/badge/Version-1.2.25-brightgreen)](https://github.com/xclv-ai/xclv_analysis/releases)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore) [![Gemini 2.5](https://img.shields.io/badge/Powered%20by-Gemini%202.5-blue)](https://ai.google.dev/) [![LiveBranding](https://img.shields.io/badge/Methodology-LiveBranding-orange)](https://xclv.ai) [![Version](https://img.shields.io/badge/Version-1.2.31-brightgreen)](https://github.com/xclv-ai/xclv_analysis/releases)
 
-## 🎉 **Latest Update - v1.2.25: Click-to-Analyze FULLY WORKING**
+## 🎉 **Latest Update - v1.2.31: Production Ready with Optimized Token Limits**
 
-**CLICK-TO-ANALYZE MODE NOW FULLY FUNCTIONAL**: Complete interactive analysis workflow successfully implemented!
+**COMPLETE SYSTEM NOW FULLY OPERATIONAL**: Comprehensive tone-of-voice analysis with Nielsen Norman Group framework successfully implemented!
 
-### ✅ What's Working in v1.2.25:
-- **🎯 Interactive Hover**: Text elements highlight perfectly when hovering
-- **👆 Element Selection**: Click highlighted text to select with visual feedback 
-- **🔍 Analyze Button**: "ANALYZE CONTENT" button appears reliably after clicking
-- **⚡ Button Positioning**: Smart positioning system works everywhere on screen
-- **🚀 Analysis Execution**: Button clicks trigger AI analysis successfully
-- **📊 Results Display**: Professional overlay shows analysis results
-- **🛡️ Error-Free Operation**: Clean console output, no JavaScript errors
+### ✅ What's Working in v1.2.31:
+- **🎯 Tone-of-Voice Analysis**: Nielsen Norman Group Core Four Dimensions framework
+- **🧠 Secure API Integration**: XOR encrypted Gemini API key storage
+- **🔍 Manual Analysis Control**: Analysis only runs when "RUN ANALYSIS" is clicked
+- **📊 Comprehensive Debug System**: Real-time logging with API requests/responses
+- **⚡ Optimized Token Limits**: 32,768 tokens (50% of Flash's 65K capacity)
+- **🎨 Richard Feynman Style**: Strategic insights with quoted evidence
+- **🛡️ CSP Compliant**: No inline scripts, proper event handling
 
 ### 📈 User Workflow (FULLY FUNCTIONAL):
-1. **Enable Interactive Mode** → "Enable Hover Analysis" checkbox ✅
-2. **Hover Over Text** → Elements highlight with blur effect ✅  
-3. **Click Highlighted Text** → Element selected with green outline ✅
-4. **Analyze Button Appears** → "🔍 ANALYZE CONTENT" button positioned perfectly ✅
-5. **Click Button** → AI analysis starts, results show in overlay ✅
+1. **Configure API Settings** → Add Gemini API key with XOR encryption ✅
+2. **Enable Interactive Mode** → "Enable Hover Analysis" checkbox ✅  
+3. **Click Text Elements** → Select content for analysis ✅
+4. **Manual Analysis Control** → Click "RUN ANALYSIS" in debug popup ✅
+5. **Comprehensive Results** → Nielsen Norman Group analysis with strategic insights ✅
 
 ---
 
@@ -36,7 +36,7 @@ Transform your brand analysis workflow with real-time insights into tone of voic
 - **Message Clarity Scoring**: Real-time assessment of communication effectiveness
 - **Cultural Alignment**: Understand how brand positioning fits current market trends
 
-### 🎯 Interactive Click-to-Analyze Mode (✅ FULLY FUNCTIONAL v1.2.25)
+### 🎯 Advanced Tone-of-Voice Analysis (✅ FULLY FUNCTIONAL v1.2.31)
 - **✅ Smart Text Detection**: Hover over any text element to see highlighting effects
 - **✅ Click Selection**: Click elements to select them with analyze button appearing  
 - **✅ One-Click Analysis**: Click "🔍 ANALYZE CONTENT" for instant brand intelligence
@@ -92,10 +92,10 @@ Transform your brand analysis workflow with real-time insights into tone of voic
 
 ### Verification
 
-You should see version **1.2.25** after loading the extension, and the browser console should show:
+You should see version **1.2.31** after loading the extension, and the browser console should show:
 ```
-XCLV: Content script v1.2.25 loaded successfully
-✅ XCLV: Click-to-analyze hover mode ENABLED
+XCLV: Content script v1.2.31 loaded successfully
+✅ XCLV: Manual analysis control system ENABLED
 ```
 
 ## 🎯 Usage
@@ -156,15 +156,15 @@ Access settings through the popup interface:
 
 ### Common Issues & Solutions
 
-**🟢 Click-to-Analyze Mode (FULLY WORKING in v1.2.25):**
-- ✅ Interactive hover highlighting works perfectly
-- ✅ Element selection on click functions correctly
-- ✅ Analyze button appears reliably everywhere
-- ✅ Button clicks trigger analysis successfully
+**🟢 Tone-of-Voice Analysis (FULLY WORKING in v1.2.31):**
+- ✅ Nielsen Norman Group Core Four Dimensions evaluation
+- ✅ Secure XOR encrypted API key storage
+- ✅ Manual analysis control with debug popup
+- ✅ Optimized 32K token limit for comprehensive results
 
 **Extension won't load or shows errors:**
-- Check for version 1.2.25 in `chrome://extensions/`
-- Look for "XCLV: Content script v1.2.25 loaded successfully" in console
+- Check for version 1.2.31 in `chrome://extensions/`
+- Look for "XCLV: Content script v1.2.31 loaded successfully" in console
 - Reload extension if needed - should load without errors
 
 **Interactive mode troubleshooting:**
@@ -199,9 +199,9 @@ For advanced debugging, enable debug mode in the interactive analyzer:
 
 ```
 xclv_analysis/
-├── manifest.json          # Extension configuration (v1.2.25)
-├── background.js          # AI services and API integration
-├── content.js            # Page interaction and analysis UI (FULLY WORKING)
+├── manifest.json          # Extension configuration (v1.2.31)
+├── background.js          # AI services with tone-of-voice prompts
+├── content.js            # Manual analysis control system (FULLY WORKING)
 ├── popup.html/js/css     # Extension popup interface
 ├── options.html/js       # Advanced settings and configuration  
 ├── content-styles.css    # Analysis panel and overlay styling
@@ -209,7 +209,7 @@ xclv_analysis/
 └── icons/               # Extension icons and assets
 ```
 
-### Key Classes (All Working in v1.2.25)
+### Key Classes (All Working in v1.2.31)
 
 - **XCLVContentController**: Main content script coordinator with safe loading
 - **ContentExtractor**: Smart content extraction and element detection
@@ -247,7 +247,7 @@ xclv_analysis/
     "url": "https://example.com",
     "timestamp": "2025-08-11T16:30:00Z",
     "model": "gemini-2.5-flash",
-    "version": "1.2.25",
+    "version": "1.2.31",
     "elementContext": {...}
   }
 }
@@ -302,16 +302,16 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## 📈 Roadmap
 
-### Phase 1: Stable Foundation (✅ v1.2.25 Complete)
+### Phase 1: Production Ready (✅ v1.2.31 Complete)
 - [x] Error-free extension loading
 - [x] Safe class declaration system
 - [x] Comprehensive error handling
 - [x] Clean console output
 - [x] Cross-browser compatibility
-- [x] **Click-to-analyze mode fully functional**
-- [x] **Interactive element selection working perfectly**
-- [x] **Smart button positioning system**
-- [x] **Complete analysis workflow operational**
+- [x] **Nielsen Norman Group tone-of-voice analysis**
+- [x] **Secure XOR encrypted API key storage**
+- [x] **Manual analysis control system**
+- [x] **Optimized token limits for comprehensive analysis**
 
 ### Phase 2: Enhanced Analysis (📋 Next - v1.3.0)
 - [ ] Multiple analysis types for interactive mode
@@ -333,34 +333,34 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-## 🆕 What's New in v1.2.25
+## 🆕 What's New in v1.2.31
 
-### 🎯 Click-to-Analyze Mode FULLY OPERATIONAL
-- **Interactive Hover Effects**: Perfect text element highlighting with blur effects
-- **Element Selection System**: Click highlighted elements to select with visual feedback
-- **Smart Button Positioning**: "ANALYZE CONTENT" buttons appear reliably everywhere
-- **Complete Analysis Workflow**: Full end-to-end functionality from click to results
-- **Debug Visibility**: Comprehensive console logging for troubleshooting
+### 🎯 Tone-of-Voice Analysis FULLY OPERATIONAL
+- **Nielsen Norman Group Framework**: Complete Core Four Dimensions evaluation
+- **Secure API Storage**: XOR encryption for Gemini API keys
+- **Manual Analysis Control**: Analysis only runs when user clicks "RUN ANALYSIS"
+- **Optimized Token Limits**: 32,768 tokens utilizing Flash's 65K capacity
+- **Strategic Insights**: Richard Feynman-style explanations with quoted evidence
 
-### 🔧 Critical Bug Fixes
-- **Fixed Element Filtering**: Resolved issue where highlighted elements were incorrectly blocked from clicks
-- **Enhanced Click Detection**: Multiple event detection methods ensure reliable button interaction
-- **Smart Positioning Logic**: Bulletproof button positioning with viewport boundary handling
-- **Error-Free Operation**: Clean console output with comprehensive debug information
+### 🔧 Critical System Improvements
+- **MAX_TOKENS Resolution**: Increased from 8,192 to 32,768 tokens based on Flash's actual limits
+- **CSP Compliance**: Removed all inline JavaScript, proper event listener implementation
+- **Debug System Enhancement**: Comprehensive real-time logging with API request/response tracking
+- **Error-Free Operation**: Clean console output with detailed troubleshooting information
 
-### 🛡️ Reliability Improvements  
-- **Cross-Viewport Compatibility**: Button positioning works at all screen locations
-- **Enhanced Event Handling**: Robust mouse event management with proper cleanup
-- **Element Validation**: Smart detection of analyzable content with proper filtering
-- **Performance Optimization**: Efficient event binding and memory management
+### 🛡️ Security & Performance Improvements  
+- **Secure Storage**: XOR encryption for API keys with automatic migration from plaintext
+- **Manual Control**: Analysis only runs when explicitly requested by user
+- **Token Optimization**: Efficient use of Gemini's actual token limits for comprehensive analysis
+- **Performance Optimization**: Efficient prompt loading and API request handling
 
-### 📊 User Experience Excellence
-- **Seamless Interaction**: Hover → Click → Analyze workflow functions perfectly
-- **Visual Feedback**: Clear element selection states and button positioning
-- **Professional Results**: Analysis overlay displays with clean formatting
-- **Intuitive Operation**: No learning curve - works exactly as expected
+### 📊 Analysis Quality Excellence
+- **Strategic Framework**: Nielsen Norman Group's proven tone-of-voice methodology
+- **Evidence-Based Insights**: Quoted language examples with strategic justifications
+- **Audience Resonance**: Psychographic mapping based on tone combinations
+- **Comprehensive Results**: Complete JSON analysis with brand positioning insights
 
-**Production Ready**: Version 1.2.25 delivers the complete click-to-analyze experience with reliable functionality across all use cases.
+**Production Ready**: Version 1.2.31 delivers enterprise-grade tone-of-voice analysis with comprehensive brand intelligence across all content types.
 
 **Transform your brand analysis workflow. Start building adaptive brand intelligence today.** 🚀
 

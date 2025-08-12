@@ -319,7 +319,7 @@ Analyze this web content for brand tone of voice using the Nielsen Norman Group'
         temperature: 0.3,
         topK: 32,
         topP: 0.8,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 32768, // OPTIMIZED: Use ~50% of Flash's 65K limit for comprehensive analysis
         stopSequences: []
       },
       safetySettings: [

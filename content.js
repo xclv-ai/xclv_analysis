@@ -1,5 +1,5 @@
 // XCLV Brand Analysis Extension - Content Script
-// Click-to-Analyze Interactive Mode v1.2.28
+// Click-to-Analyze Interactive Mode v1.2.30
 
 // Prevent duplicate loading and class redeclaration errors
 if (window.xclvContentLoaded) {
@@ -7,7 +7,7 @@ if (window.xclvContentLoaded) {
   // Don't execute the rest of the file if already loaded
 } else {
   window.xclvContentLoaded = true;
-  console.log('XCLV: Content script loading v1.2.28...');
+  console.log('XCLV: Content script loading v1.2.30...');
 
 // Safe class declarations with existence checks
 if (typeof window.ContentExtractor === 'undefined') {
@@ -367,6 +367,7 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
       this.isAnalyzing = false;
       this.debugMode = true; // Auto-enable debug mode
       this.debugWindow = null; // Reference to debug popup window
+      this.pendingAnalysis = null; // Store pending analysis data
       
       console.log('XCLV: InteractiveContentAnalyzer initialized with click-to-analyze mode');
     }
@@ -940,20 +941,17 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         // Show loading state
         this.showAnalysisOverlay(element, { loading: true });
 
-        // Send analysis request
-        const response = await this.sendAnalysisRequest(text, element);
+        // DON'T run analysis automatically - wait for user to click "RUN ANALYSIS" in debug popup
+        console.log('🎯 XCLV: Element analysis prepared, waiting for user action in debug popup');
         
-        if (response && response.success) {
-          this.analysisCache.set(text, response.data);
-          this.showAnalysisResult(element, response.data);
-          
-          // Update debug popup with results if open
-          if (this.debugMode && this.debugWindow && !this.debugWindow.closed) {
-            this.updateDebugPopupWithResults(response);
-          }
-        } else {
-          throw new Error(response?.error || 'Analysis failed');
-        }
+        // Show ready state
+        this.showAnalysisOverlay(element, { ready: true });
+        
+        // Store analysis data for manual trigger
+        this.pendingAnalysis = {
+          text: text,
+          element: element
+        };
         
       } catch (error) {
         console.error('XCLV: Element analysis failed:', error);
@@ -1063,7 +1061,47 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
                 </div>
 
                 <div id="results-tab" class="tab-panel">
-                  <div class="loading">⏳ Waiting for analysis results...</div>
+                  <div class="section">
+                    <h3>🎯 Analysis Control Panel</h3>
+                    <div style="margin: 15px 0;">
+                      <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="tov-analysis-checkbox" checked style="margin-right: 10px;">
+                        <span class="value">Tone of Voice Analysis</span>
+                      </label>
+                    </div>
+                    <button id="run-analysis-btn" style="
+                      background: #00ff88; 
+                      color: #000; 
+                      border: none; 
+                      padding: 10px 20px; 
+                      border-radius: 5px; 
+                      cursor: pointer; 
+                      font-weight: bold;
+                      font-size: 14px;
+                      margin: 10px 0;">
+                      🚀 RUN ANALYSIS
+                    </button>
+                  </div>
+                  
+                  <div class="section" id="debug-status">
+                    <h3>📊 Debug Status</h3>
+                    <div id="debug-log" style="
+                      background: #000; 
+                      padding: 10px; 
+                      border-radius: 5px; 
+                      font-family: monospace; 
+                      font-size: 11px; 
+                      line-height: 1.3;
+                      max-height: 150px;
+                      overflow-y: auto;">
+                      ✅ Ready - Click "RUN ANALYSIS" to start
+                    </div>
+                  </div>
+                  
+                  <div class="section" id="analysis-results" style="display: none;">
+                    <h3>✅ Analysis Results</h3>
+                    <div id="results-content"></div>
+                  </div>
                 </div>
               </div>
             </body>
@@ -1101,6 +1139,16 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
             this.showDebugTab(targetTab);
           });
         });
+        
+        // Setup RUN ANALYSIS button
+        const runAnalysisBtn = this.debugWindow.document.getElementById('run-analysis-btn');
+        if (runAnalysisBtn) {
+          runAnalysisBtn.addEventListener('click', () => {
+            console.log('XCLV: Run Analysis button clicked');
+            this.runManualAnalysis();
+          });
+          console.log('XCLV: Run Analysis button event listener attached');
+        }
         
         console.log('XCLV: Tab event listeners setup complete');
         
@@ -1148,6 +1196,172 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         
       } catch (error) {
         console.error('XCLV: Failed to show debug tab:', error);
+      }
+    }
+
+    async runManualAnalysis() {
+      try {
+        console.log('🚀 XCLV: Starting manual analysis');
+        
+        if (!this.pendingAnalysis) {
+          this.logToDebugPopup('❌ Error: No pending analysis data');
+          return;
+        }
+
+        if (!this.debugWindow || this.debugWindow.closed) {
+          console.log('XCLV: Debug window not available');
+          return;
+        }
+
+        // Check if ToV analysis is selected
+        const tovCheckbox = this.debugWindow.document.getElementById('tov-analysis-checkbox');
+        if (!tovCheckbox || !tovCheckbox.checked) {
+          this.logToDebugPopup('⚠️ Please select Tone of Voice Analysis');
+          return;
+        }
+
+        const { text, element } = this.pendingAnalysis;
+
+        this.logToDebugPopup('🔍 Starting Tone of Voice Analysis...');
+        this.logToDebugPopup(`📝 Content: ${text.substring(0, 100)}...`);
+        this.logToDebugPopup(`🏷️ Element: ${element.tagName}`);
+        this.logToDebugPopup(`📏 Content length: ${text.length} characters`);
+        
+        // Warn about very long content
+        if (text.length > 2000) {
+          this.logToDebugPopup('⚠️ Warning: Long content may hit token limits');
+        }
+        
+        // Update button state
+        const runBtn = this.debugWindow.document.getElementById('run-analysis-btn');
+        if (runBtn) {
+          runBtn.disabled = true;
+          runBtn.textContent = '⏳ ANALYZING...';
+          runBtn.style.background = '#666';
+        }
+
+        this.isAnalyzing = true;
+        
+        // Check cache first
+        if (this.analysisCache.has(text)) {
+          this.logToDebugPopup('⚡ Using cached result');
+          const cachedResult = this.analysisCache.get(text);
+          this.displayAnalysisResults(cachedResult);
+          this.resetRunButton();
+          return;
+        }
+
+        // Send analysis request with debugging
+        this.logToDebugPopup('📡 Sending API request to Gemini...');
+        const startTime = Date.now();
+        
+        const response = await this.sendAnalysisRequest(text, element);
+        
+        const duration = Date.now() - startTime;
+        this.logToDebugPopup(`⏱️ API call completed in ${duration}ms`);
+        
+        if (response && response.success) {
+          this.logToDebugPopup('✅ Analysis successful!');
+          this.logToDebugPopup(`🤖 Model: ${response.metadata?.model || 'Unknown'}`);
+          
+          this.analysisCache.set(text, response.data);
+          this.displayAnalysisResults(response);
+          this.showAnalysisResult(element, response.data);
+        } else {
+          const errorMsg = response?.error || 'Unknown error';
+          this.logToDebugPopup(`❌ Analysis failed: ${errorMsg}`);
+          
+          // Handle specific errors with suggestions
+          if (errorMsg.includes('MAX_TOKENS')) {
+            this.logToDebugPopup('💡 Solution 1: Switch to Gemini 2.5 Pro in extension settings');
+            this.logToDebugPopup('💡 Solution 2: Try analyzing shorter text elements');
+            this.logToDebugPopup('💡 Solution 3: Content may be too complex for Flash model');
+          } else if (errorMsg.includes('API key')) {
+            this.logToDebugPopup('💡 Suggestion: Check API key in extension settings');
+          } else if (errorMsg.includes('quota') || errorMsg.includes('QUOTA')) {
+            this.logToDebugPopup('💡 Suggestion: API quota exceeded. Check Google AI Studio');
+          } else if (errorMsg.includes('safety') || errorMsg.includes('SAFETY')) {
+            this.logToDebugPopup('💡 Suggestion: Content flagged by safety filters');
+          }
+          
+          this.showAnalysisResult(element, { error: errorMsg });
+        }
+        
+      } catch (error) {
+        console.error('XCLV: Manual analysis failed:', error);
+        this.logToDebugPopup(`💥 Error: ${error.message}`);
+      } finally {
+        this.isAnalyzing = false;
+        this.resetRunButton();
+      }
+    }
+
+    resetRunButton() {
+      if (!this.debugWindow || this.debugWindow.closed) return;
+      
+      const runBtn = this.debugWindow.document.getElementById('run-analysis-btn');
+      if (runBtn) {
+        runBtn.disabled = false;
+        runBtn.textContent = '🚀 RUN ANALYSIS';
+        runBtn.style.background = '#00ff88';
+      }
+    }
+
+    logToDebugPopup(message) {
+      try {
+        console.log('XCLV Debug:', message);
+        
+        if (!this.debugWindow || this.debugWindow.closed) return;
+        
+        const debugLog = this.debugWindow.document.getElementById('debug-log');
+        if (debugLog) {
+          const timestamp = new Date().toLocaleTimeString();
+          debugLog.innerHTML += `\n[${timestamp}] ${message}`;
+          debugLog.scrollTop = debugLog.scrollHeight;
+        }
+      } catch (error) {
+        console.error('XCLV: Failed to log to debug popup:', error);
+      }
+    }
+
+    displayAnalysisResults(response) {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) return;
+
+        const resultsSection = this.debugWindow.document.getElementById('analysis-results');
+        const resultsContent = this.debugWindow.document.getElementById('results-content');
+        
+        if (!resultsSection || !resultsContent) return;
+
+        const resultsHTML = `
+          <div style="margin-bottom: 15px;">
+            <div class="key">Model:</div>
+            <div class="value">${response.metadata?.model || 'Unknown'}</div>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <div class="key">Prompt Type:</div>
+            <div class="value">${response.metadata?.promptType || 'Unknown'}</div>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <div class="key">Results:</div>
+            <pre class="json-result">${JSON.stringify(response.data, null, 2)}</pre>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <div class="key">System Prompt:</div>
+            <pre style="max-height: 150px; overflow-y: auto;">${response.systemPrompt || 'No system prompt available'}</pre>
+          </div>
+        `;
+
+        resultsContent.innerHTML = resultsHTML;
+        resultsSection.style.display = 'block';
+        
+        this.logToDebugPopup('📊 Results displayed in popup');
+        
+      } catch (error) {
+        console.error('XCLV: Failed to display analysis results:', error);
       }
     }
 
@@ -1248,6 +1462,16 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
             <div class="xclv-loading">
               <div class="xclv-spinner"></div>
               <span>Analyzing...</span>
+            </div>
+          </div>
+        `;
+      } else if (data.ready) {
+        this.analysisOverlay.innerHTML = `
+          <div class="xclv-overlay-content">
+            <div class="xclv-ready">
+              <span>🎯 Ready for analysis</span>
+              <br>
+              <small>Use debug popup to run analysis</small>
             </div>
           </div>
         `;
@@ -1409,7 +1633,7 @@ if (typeof window.XCLVContentController === 'undefined') {
       this.interactiveAnalyzer = new window.InteractiveContentAnalyzer();
       this.isAnalyzing = false;
       
-      console.log('XCLV: Content Controller created v1.2.28');
+      console.log('XCLV: Content Controller created v1.2.30');
     }
 
     initialize() {
@@ -1610,7 +1834,7 @@ function initializeXCLV() {
 
     window.xclvController = new window.XCLVContentController();
     window.xclvController.initialize();
-    console.log('XCLV: Content Controller initialized successfully v1.2.28');
+    console.log('XCLV: Content Controller initialized successfully v1.2.30');
   } catch (error) {
     console.error('XCLV: Failed to initialize Content Controller:', error);
     // Retry once after a delay
@@ -1670,6 +1894,6 @@ window.addEventListener('error', (event) => {
 }, true);
 
 // Mark as loaded
-console.log('XCLV: Content script v1.2.28 loaded successfully');
+console.log('XCLV: Content script v1.2.30 loaded successfully');
 
 } // End of duplicate loading check

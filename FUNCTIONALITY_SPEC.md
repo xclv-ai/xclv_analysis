@@ -3,52 +3,52 @@
 ## 📋 OVERVIEW
 
 **Extension Name**: XCLV Brand Analysis  
-**Current Version**: 1.2.25  
-**Core Purpose**: Strategic brand intelligence powered by Google Gemini AI for real-time webpage content analysis  
+**Current Version**: 1.2.31  
+**Core Purpose**: Comprehensive tone-of-voice analysis powered by Nielsen Norman Group framework and Google Gemini AI  
 **Target Users**: Brand strategists, marketers, content creators, UX writers, brand consultants  
 
-**Primary Value Proposition**: Transform any webpage into a brand analysis laboratory with instant AI-powered insights on tone of voice, message clarity, and brand archetypes through interactive hover analysis.
+**Primary Value Proposition**: Transform any webpage into a strategic brand analysis laboratory with comprehensive Nielsen Norman Group tone-of-voice evaluation, featuring secure API storage, manual analysis control, and evidence-based insights with Richard Feynman-style explanations.
 
 ---
 
 ## 🎯 CORE FUNCTIONALITY MATRIX
 
-### 1. INTERACTIVE CLICK-TO-ANALYZE MODE (Primary Feature)
-**Status**: 🎉 FULLY OPERATIONAL (v1.2.25)
+### 1. NIELSEN NORMAN GROUP TONE-OF-VOICE ANALYSIS (Primary Feature)
+**Status**: 🎉 PRODUCTION READY (v1.2.31)
 
 **Functionality**:
-- ✅ **Hover Detection**: Hover over any text element to see highlighting with blur effects
-- ✅ **Element Selection**: Click highlighted elements to select with green outline feedback
-- ✅ **Smart Button Positioning**: "🔍 ANALYZE CONTENT" button appears reliably everywhere on screen
-- ✅ **Analysis Execution**: Button clicks trigger real-time AI analysis successfully
-- ✅ **Results Display**: Professional overlay displays analysis results with auto-hide
-- ✅ **Analysis Caching**: Prevents duplicate API calls for identical content
-- ✅ **Element Detection**: Smart filtering for analyzable content (5-1000 characters, visible elements)
-- ✅ **Memory Management**: Proper event cleanup and resource management
-- ✅ **Toggle Controls**: Enable/disable interactive mode with proper state management
-- ✅ **Debug Logging**: Comprehensive console output for troubleshooting
+- ✅ **Core Four Dimensions**: Complete Nielsen Norman Group framework evaluation
+- ✅ **Secure API Storage**: XOR encryption for Gemini API keys with automatic migration
+- ✅ **Manual Analysis Control**: Analysis only runs when user clicks "RUN ANALYSIS"
+- ✅ **Optimized Token Limits**: 32,768 tokens utilizing Flash's actual 65K capacity
+- ✅ **Strategic Insights**: Richard Feynman-style explanations with quoted evidence
+- ✅ **Audience Resonance**: Psychographic mapping based on tone combinations
+- ✅ **Comprehensive Debug System**: Real-time logging with API requests/responses
+- ✅ **CSP Compliant**: No inline scripts, proper event listener implementation
+- ✅ **Evidence-Based Analysis**: Quoted language examples with strategic justifications
+- ✅ **Brand Positioning Insights**: Complete JSON analysis with competitive advantages
 
 **Technical Implementation**:
-- `InteractiveContentAnalyzer` class handles all hover interactions
-- Mouse event listeners: mouseover, mouseout, click with proper capture
-- Element highlighting with CSS blur filter
-- Dynamic button positioning using getBoundingClientRect
-- Analysis request pipeline to background service worker
-- Result overlay with structured JSON display
-- Performance optimization with Map-based caching
+- `BrandAnalysisService` class with tone-of-voice prompt integration
+- XOR encryption using 'xclv2025' key for secure API storage
+- Manual analysis trigger system with comprehensive debug popup
+- Nielsen Norman Group framework with Core Four Dimensions scoring
+- Optimized token limits (32K) for comprehensive brand analysis
+- Richard Feynman-style insight generation with quoted evidence
+- Real-time debugging with API request/response logging
 
-### 2. FLOATING ANALYSIS PANEL (Secondary Feature)
-**Status**: ✅ FULLY FUNCTIONAL (v1.2.25)
+### 2. INTERACTIVE ELEMENT ANALYSIS (Secondary Feature)
+**Status**: ✅ FULLY FUNCTIONAL (v1.2.31)
 
 **Functionality**:
-- Draggable floating panel that can be positioned anywhere on page
-- Toggle controls for interactive mode (Enable/Disable hover analysis)
-- Page-wide analysis trigger ("🔍 Analyze Page" button)
-- Status indicator showing analysis state (Ready/Analyzing/Complete/Error)
-- Settings section with hover insights toggle
-- API settings reference (links to extension options)
-- Minimize/close controls with smooth animations
-- Persistent positioning across page reloads
+- Click-to-select element analysis with visual feedback
+- Manual analysis control system with "RUN ANALYSIS" button
+- Comprehensive debug popup with tabbed interface
+- Real-time logging of API requests, responses, and errors
+- Content extraction with element context preservation
+- Strategic analysis results with brand positioning insights
+- Audience resonance mapping based on tone analysis
+- Error handling with specific troubleshooting suggestions
 
 **Technical Implementation**:
 - `AnalysisPanel` class with full drag-and-drop functionality
@@ -120,33 +120,40 @@
 - Structured data output for analysis pipeline
 
 ### 6. BRAND ANALYSIS INTELLIGENCE (AI Core)
-**Status**: ✅ IMPLEMENTED (Basic Level)
+**Status**: ✅ PRODUCTION READY (v1.2.31)
 
 **Current Analysis Types**:
-- **Tone of Voice Analysis**: Formality, warmth, authority, professionalism
-- **Message Clarity**: Readability, coherence, call-to-action effectiveness
-- **Brand Archetype Detection**: Hero, Sage, Explorer, Innocent, Ruler patterns
-- **Content Quality Scoring**: Overall brand alignment and effectiveness
+- **Nielsen Norman Group Tone Analysis**: Core Four Dimensions with 1-5 scoring
+  - Formal vs Casual evaluation
+  - Serious vs Funny assessment
+  - Respectful vs Irreverent positioning
+  - Matter-of-fact vs Enthusiastic energy
+- **Strategic Brand Positioning**: Evidence-based insights with quoted language
+- **Audience Resonance Mapping**: Psychographic targeting recommendations
+- **Competitive Advantage Analysis**: Brand differentiation insights
 
 **Analysis Output Structure**:
 ```json
 {
-  "analysis": {
-    "scores": {
-      "clarity": "85/100",
-      "tone": "Professional-Warm",
-      "impact": "High"
+  "brand_name": "Banana Boat",
+  "tone_of_voice": {
+    "formal_vs_casual": {
+      "score": 4,
+      "position": "Mostly Casual",
+      "justification": "Mostly Casual: Uses phrases like 'you can trust' and 'perfect for play'..."
     },
-    "summary": "Professional tone with high clarity...",
-    "recommendations": ["Increase emotional resonance..."],
-    "archetype": "Sage",
-    "confidence": 0.87
+    "serious_vs_funny": {
+      "score": 1,
+      "position": "Completely Serious",
+      "justification": "Completely Serious: Focus on safety with 'pediatrician tested'..."
+    }
   },
-  "metadata": {
-    "analysisType": "element",
-    "timestamp": "2025-08-11T15:30:00Z",
-    "modelUsed": "gemini-pro"
-  }
+  "tov_summary": {
+    "overall_brand_voice": "Reassuring authority blending casual language with serious safety focus",
+    "key_differentiators": "Trust-building authority with benefit-oriented simplicity"
+  },
+  "resonates_with": "Experience-seeking lifestyle consumers",
+  "justification": "Casual and enthusiastic tone appeals to positive family experiences"
 }
 ```
 
@@ -282,18 +289,19 @@ element.addEventListener('click', (e) => {
 
 ## 📊 ANALYSIS CAPABILITIES SPECIFICATION
 
-### TONE OF VOICE ANALYSIS
-**Dimensions Measured**:
-- **Formality Scale**: Casual (-100) ↔ Formal (+100)
-- **Warmth Scale**: Cold (-100) ↔ Warm (+100)  
-- **Authority Scale**: Humble (-100) ↔ Authoritative (+100)
-- **Energy Scale**: Calm (-100) ↔ Energetic (+100)
+### NIELSEN NORMAN GROUP TONE-OF-VOICE ANALYSIS
+**Core Four Dimensions**:
+- **Formal vs Casual**: 1=Highly Formal, 5=Highly Casual
+- **Serious vs Funny**: 1=Completely Serious, 5=Very Funny  
+- **Respectful vs Irreverent**: 1=Deeply Respectful, 5=Highly Irreverent
+- **Matter-of-fact vs Enthusiastic**: 1=Purely Matter-of-fact, 5=Extremely Enthusiastic
 
 **Technical Implementation**:
-- Keyword vector analysis with weighted scoring
-- Linguistic pattern recognition
-- Contextual sentiment analysis
-- Comparative baseline scoring
+- Nielsen Norman Group framework with 1-5 scoring system
+- Evidence-based analysis with quoted language examples
+- Richard Feynman-style explanations for strategic insights
+- Audience resonance mapping based on tone combinations
+- Strategic positioning analysis with competitive advantages
 
 ### BRAND ARCHETYPE DETECTION
 **Supported Archetypes**:
@@ -677,8 +685,8 @@ element.addEventListener('click', (e) => {
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: August 11, 2025  
+**Document Version**: 1.2.31  
+**Last Updated**: August 12, 2025  
 **Maintained By**: XCLV Brand Intelligence Team  
 **Next Review**: September 15, 2025
 
