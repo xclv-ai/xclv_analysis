@@ -33,13 +33,23 @@
         🔍 Analyze Page
       </button>
       
-      <div class="action-row">
-        <button id="show-panel-btn" class="btn secondary">
-          📊 Show Analysis Panel
-        </button>
-        <button id="stop-analysis-btn" class="btn danger" style="display: none;">
-          ⏹️ Stop Analysis
-        </button>
+      <button id="show-panel-btn" class="btn secondary large">
+        📊 Show Analysis Panel
+      </button>
+      
+      <button id="stop-analysis-btn" class="btn danger large" style="display: none;">
+        ⏹️ Stop Analysis
+      </button>
+    </section>
+
+    <!-- Analysis Modules -->
+    <section class="section">
+      <h3>Analysis Modules</h3>
+      <div class="modules-container" id="modules-container">
+        <div class="module-loading">
+          <div class="loading-spinner"></div>
+          <span>Loading available modules...</span>
+        </div>
       </div>
     </section>
 

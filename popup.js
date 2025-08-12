@@ -56,6 +56,9 @@ class XCLVPopupController {
       // Initialize API section as collapsed
       this.initializeCollapsibleSections();
       
+      // Load available analysis modules
+      await this.loadAnalysisModules();
+      
       // Check extension status
       await this.checkExtensionStatus();
       
@@ -638,6 +641,136 @@ ${Array.isArray(data.recommendations?.quick_wins) ?
         }
       });
     });
+  }
+
+  async loadAnalysisModules() {
+    try {
+      const modulesContainer = document.getElementById('modules-container');
+      if (!modulesContainer) return;
+
+      // Show loading state
+      modulesContainer.innerHTML = `
+        <div class="module-loading">
+          <div class="loading-spinner"></div>
+          <span>Loading available modules...</span>
+        </div>
+      `;
+
+      // Request available prompts from background
+      const response = await chrome.runtime.sendMessage({
+        action: 'getAvailablePrompts'
+      });
+
+      if (response && response.success) {
+        const prompts = response.prompts;
+        this.displayAnalysisModules(prompts);
+      } else {
+        throw new Error('Failed to load analysis modules');
+      }
+
+    } catch (error) {
+      console.error('XCLV Popup: Failed to load analysis modules:', error);
+      this.displayModulesError('Failed to load analysis modules');
+    }
+  }
+
+  displayAnalysisModules(prompts) {
+    const modulesContainer = document.getElementById('modules-container');
+    if (!modulesContainer) return;
+
+    if (!prompts || Object.keys(prompts).length === 0) {
+      modulesContainer.innerHTML = `
+        <div class="modules-empty">
+          No analysis modules available
+        </div>
+      `;
+      return;
+    }
+
+    // Create module UI elements
+    const moduleItems = Object.entries(prompts).map(([moduleName, promptContent]) => {
+      const displayName = this.formatModuleName(moduleName);
+      const description = this.getModuleDescription(moduleName);
+      const isDefault = ['tone-of-voice-analysis', 'brand-archetype-analysis'].includes(moduleName);
+      const badge = isDefault ? 'default' : 'new';
+
+      return `
+        <div class="module-item" data-module="${moduleName}">
+          <input type="checkbox" 
+                 class="module-checkbox" 
+                 id="module-${moduleName}" 
+                 ${isDefault ? 'checked' : ''}>
+          <div class="module-info">
+            <div class="module-name">${displayName}</div>
+            <div class="module-description">${description}</div>
+          </div>
+          <span class="module-badge ${badge}">${badge}</span>
+        </div>
+      `;
+    }).join('');
+
+    modulesContainer.innerHTML = moduleItems;
+
+    // Add event listeners for checkboxes
+    modulesContainer.querySelectorAll('.module-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        this.onModuleSelectionChanged();
+      });
+    });
+  }
+
+  displayModulesError(error) {
+    const modulesContainer = document.getElementById('modules-container');
+    if (!modulesContainer) return;
+
+    modulesContainer.innerHTML = `
+      <div class="modules-error">
+        ${error}
+      </div>
+    `;
+  }
+
+  formatModuleName(moduleName) {
+    return moduleName
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  getModuleDescription(moduleName) {
+    const descriptions = {
+      'tone-of-voice-analysis': 'Analyze brand tone, formality, warmth, and authenticity',
+      'brand-archetype-analysis': 'Identify Jung\'s brand archetypes in content',
+      'comprehensive-brand-analysis': 'Complete brand intelligence analysis',
+      'text-element-analysis': 'Analyze individual text elements',
+      'competitor-analysis': 'Compare against competitor messaging',
+      'content-strategy': 'Strategic content recommendations',
+      'brand-positioning': 'Brand positioning and differentiation',
+      'messaging-framework': 'Core messaging structure analysis'
+    };
+
+    return descriptions[moduleName] || 'Custom analysis module';
+  }
+
+  onModuleSelectionChanged() {
+    const selectedModules = this.getSelectedModules();
+    console.log('XCLV: Selected modules:', selectedModules);
+    
+    // Update analysis button text based on selection
+    const analyzeBtn = document.getElementById('analyze-page-btn');
+    if (analyzeBtn) {
+      if (selectedModules.length === 0) {
+        analyzeBtn.textContent = '🔍 Select Modules First';
+        analyzeBtn.disabled = true;
+      } else {
+        analyzeBtn.textContent = `🔍 Analyze Page (${selectedModules.length} modules)`;
+        analyzeBtn.disabled = false;
+      }
+    }
+  }
+
+  getSelectedModules() {
+    const checkboxes = document.querySelectorAll('.module-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.id.replace('module-', ''));
   }
 
   async toggleInteractiveMode() {

@@ -44,25 +44,291 @@ if (typeof window.ContentExtractor === 'undefined') {
     }
 
     extractMainContent() {
-      const contentSelectors = [
-        'main', 'article', '[role="main"]',
-        '.content', '.main-content', '#content',
-        'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-      ];
+      try {
+        // Enhanced intelligent content extraction for meaningful content only
+        const meaningfulContent = this.extractMeaningfulContent();
+        
+        console.log('XCLV: Enhanced content extraction completed:', {
+          contentLength: meaningfulContent.length,
+          wordCount: meaningfulContent.split(' ').length
+        });
+        
+        return meaningfulContent || this.fallbackExtraction();
+      } catch (error) {
+        console.error('XCLV: Enhanced extraction failed, using fallback:', error);
+        return this.fallbackExtraction();
+      }
+    }
 
-      let content = '';
+    extractMeaningfulContent() {
+      const contentBlocks = [];
       
-      for (const selector of contentSelectors) {
+      // Priority 1: Semantic content containers (highest quality)
+      const semanticSelectors = [
+        'main', 'article', '[role="main"]', 
+        '.post-content', '.entry-content', '.article-content',
+        '.content', '.main-content', '#content'
+      ];
+      
+      // Priority 2: Structured content blocks
+      const structuredSelectors = [
+        'section', '.section', 
+        '.hero', '.hero-content',
+        '.description', '.about',
+        '.features', '.benefits'
+      ];
+      
+      // Priority 3: Text-heavy elements
+      const textSelectors = ['p', 'div', 'blockquote'];
+      
+      // Extract from semantic containers first
+      this.extractFromSelectors(semanticSelectors, contentBlocks, 'semantic');
+      
+      // If we don't have enough content, try structured elements
+      if (this.getTotalContentLength(contentBlocks) < 1000) {
+        this.extractFromSelectors(structuredSelectors, contentBlocks, 'structured');
+      }
+      
+      // If still not enough, carefully select text elements
+      if (this.getTotalContentLength(contentBlocks) < 2000) {
+        this.extractTextElements(textSelectors, contentBlocks);
+      }
+      
+      // Add headlines for context
+      this.addHeadlinesContext(contentBlocks);
+      
+      // Clean and combine content
+      return this.processContentBlocks(contentBlocks);
+    }
+
+    extractFromSelectors(selectors, contentBlocks, type) {
+      for (const selector of selectors) {
         const elements = document.querySelectorAll(selector);
         for (const element of elements) {
-          if (element.textContent && element.textContent.trim().length > 20) {
-            content += element.textContent.trim() + ' ';
+          if (this.isValidContentElement(element)) {
+            const content = this.cleanElementContent(element);
+            if (content && content.length >= 100) {
+              contentBlocks.push({
+                content: content,
+                type: type,
+                element: element.tagName.toLowerCase(),
+                priority: type === 'semantic' ? 1 : 2
+              });
+            }
           }
         }
-        if (content.length > 500) break; // Sufficient content found
+        // Stop if we have good semantic content
+        if (type === 'semantic' && this.getTotalContentLength(contentBlocks) > 3000) {
+          break;
+        }
       }
+    }
 
-      return content.trim() || document.body.textContent.trim();
+    extractTextElements(selectors, contentBlocks) {
+      const processedElements = new Set();
+      
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          // Avoid duplicates and nested processing
+          if (processedElements.has(element) || this.isInsideProcessedElement(element, processedElements)) {
+            continue;
+          }
+          
+          if (this.isValidTextElement(element)) {
+            const content = this.cleanElementContent(element);
+            if (content && content.length >= 50) {
+              contentBlocks.push({
+                content: content,
+                type: 'text',
+                element: element.tagName.toLowerCase(),
+                priority: 3
+              });
+              processedElements.add(element);
+            }
+          }
+        }
+        
+        // Cap content extraction to avoid overwhelming analysis
+        if (this.getTotalContentLength(contentBlocks) > 8000) {
+          break;
+        }
+      }
+    }
+
+    addHeadlinesContext(contentBlocks) {
+      const headlines = document.querySelectorAll('h1, h2, h3, h4');
+      for (const headline of headlines) {
+        const headlineText = headline.textContent.trim();
+        if (headlineText.length > 10 && headlineText.length < 200) {
+          contentBlocks.push({
+            content: headlineText,
+            type: 'headline',
+            element: headline.tagName.toLowerCase(),
+            priority: 0 // Highest priority for context
+          });
+        }
+      }
+    }
+
+    isValidContentElement(element) {
+      // Skip navigation, UI elements, and other non-content areas
+      const skipSelectors = [
+        'nav', 'header', 'footer', 'aside',
+        '.nav', '.navigation', '.menu',
+        '.sidebar', '.widget', '.advertisement',
+        '.social', '.share', '.comments',
+        '.cookie', '.banner', '.popup',
+        '.breadcrumb', '.pagination',
+        'script', 'style', 'noscript'
+      ];
+      
+      // Check if element or its parents match skip patterns
+      for (const skipSelector of skipSelectors) {
+        if (element.matches && element.matches(skipSelector)) return false;
+        if (element.closest && element.closest(skipSelector)) return false;
+      }
+      
+      // Skip elements that are likely UI components
+      const classList = element.className || '';
+      const skipPatterns = ['btn', 'button', 'form', 'input', 'modal', 'overlay'];
+      if (skipPatterns.some(pattern => classList.includes(pattern))) return false;
+      
+      return true;
+    }
+
+    isValidTextElement(element) {
+      if (!this.isValidContentElement(element)) return false;
+      
+      const text = element.textContent.trim();
+      
+      // Skip short text blocks
+      if (text.length < 50) return false;
+      
+      // Skip elements with too many links (likely navigation)
+      const links = element.querySelectorAll('a').length;
+      const words = text.split(' ').length;
+      if (links > 0 && links / words > 0.3) return false;
+      
+      // Skip elements that look like lists of links
+      const listItems = element.querySelectorAll('li').length;
+      if (listItems > 3 && text.length / listItems < 30) return false;
+      
+      return true;
+    }
+
+    cleanElementContent(element) {
+      if (!element) return '';
+      
+      // Create a clone to avoid modifying the original
+      const clone = element.cloneNode(true);
+      
+      // Remove script and style elements
+      const unwantedElements = clone.querySelectorAll('script, style, noscript');
+      unwantedElements.forEach(el => el.remove());
+      
+      // Get text content and clean it
+      let content = clone.textContent || '';
+      
+      // Clean up whitespace
+      content = content.replace(/\s+/g, ' ').trim();
+      
+      // Remove common UI patterns
+      content = content.replace(/^(Read more|Continue reading|Click here|Learn more)/i, '');
+      content = content.replace(/(Home|About|Contact|Privacy|Terms)\s*$/i, '');
+      
+      return content;
+    }
+
+    isInsideProcessedElement(element, processedElements) {
+      for (const processed of processedElements) {
+        if (processed.contains(element)) return true;
+      }
+      return false;
+    }
+
+    getTotalContentLength(contentBlocks) {
+      return contentBlocks.reduce((total, block) => total + block.content.length, 0);
+    }
+
+    processContentBlocks(contentBlocks) {
+      // Sort by priority (headlines first, then semantic, structured, text)
+      contentBlocks.sort((a, b) => a.priority - b.priority);
+      
+      // Deduplicate similar content
+      const uniqueBlocks = this.deduplicateContent(contentBlocks);
+      
+      // Combine into final content string
+      let finalContent = '';
+      let totalLength = 0;
+      
+      for (const block of uniqueBlocks) {
+        // Add spacing between different content types
+        if (finalContent && block.type === 'headline') {
+          finalContent += '\n\n';
+        } else if (finalContent) {
+          finalContent += ' ';
+        }
+        
+        finalContent += block.content;
+        totalLength += block.content.length;
+        
+        // Cap at reasonable length for API efficiency
+        if (totalLength > 8000) break;
+      }
+      
+      return finalContent.trim();
+    }
+
+    deduplicateContent(contentBlocks) {
+      const uniqueBlocks = [];
+      const seenContent = new Set();
+      
+      for (const block of contentBlocks) {
+        // Create a normalized version for comparison
+        const normalized = block.content.toLowerCase().replace(/\s+/g, ' ').trim();
+        
+        // Skip if we've seen very similar content
+        let isDuplicate = false;
+        for (const seen of seenContent) {
+          if (this.calculateSimilarity(normalized, seen) > 0.8) {
+            isDuplicate = true;
+            break;
+          }
+        }
+        
+        if (!isDuplicate) {
+          uniqueBlocks.push(block);
+          seenContent.add(normalized);
+        }
+      }
+      
+      return uniqueBlocks;
+    }
+
+    calculateSimilarity(str1, str2) {
+      const words1 = str1.split(' ');
+      const words2 = str2.split(' ');
+      const intersection = words1.filter(word => words2.includes(word));
+      return intersection.length / Math.max(words1.length, words2.length);
+    }
+
+    fallbackExtraction() {
+      // Simple fallback if enhanced extraction fails
+      const fallbackSelectors = ['main', 'article', '.content'];
+      for (const selector of fallbackSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          const content = this.cleanElementContent(element);
+          if (content && content.length > 100) {
+            return content.substring(0, 5000); // Reasonable limit
+          }
+        }
+      }
+      
+      // Last resort: body content (filtered)
+      const bodyContent = this.cleanElementContent(document.body);
+      return bodyContent ? bodyContent.substring(0, 3000) : '';
     }
 
     extractHeadlines() {
@@ -1012,6 +1278,170 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
                 }
                 .loading { text-align: center; padding: 50px; color: #888; }
                 .json-result { background: #0a0a0a; color: #00ff88; font-size: 13px; }
+                
+                /* ToV Slider Styles - Inspired by tooooools.app */
+                .tov-container {
+                  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+                  border-radius: 12px;
+                  padding: 25px;
+                  border: 1px solid rgba(0, 255, 136, 0.2);
+                }
+                
+                .tov-loading, .tov-spinner {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 12px;
+                  padding: 40px;
+                  color: #888;
+                  font-size: 13px;
+                }
+                
+                .tov-spinner::before {
+                  content: '';
+                  width: 20px;
+                  height: 20px;
+                  border: 2px solid rgba(0, 255, 136, 0.2);
+                  border-top: 2px solid #00ff88;
+                  border-radius: 50%;
+                  animation: spin 1s linear infinite;
+                }
+                
+                .tov-slider-group {
+                  margin-bottom: 30px;
+                }
+                
+                .tov-slider-item {
+                  margin-bottom: 25px;
+                }
+                
+                .tov-slider-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                }
+                
+                .tov-slider-label {
+                  font-family: 'Segoe UI', -apple-system, sans-serif;
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: #e0e8ea;
+                  text-transform: capitalize;
+                  letter-spacing: 0.5px;
+                }
+                
+                .tov-slider-value {
+                  font-family: 'JetBrains Mono', monospace;
+                  font-size: 16px;
+                  font-weight: 700;
+                  color: #00ff88;
+                  min-width: 40px;
+                  text-align: right;
+                }
+                
+                .tov-slider-track {
+                  position: relative;
+                  height: 8px;
+                  background: linear-gradient(90deg, #2a2a3e 0%, #3a3a5e 100%);
+                  border-radius: 6px;
+                  margin: 8px 0;
+                  overflow: hidden;
+                  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+                }
+                
+                .tov-slider-fill {
+                  height: 100%;
+                  background: linear-gradient(90deg, #00ff88 0%, #00cc6a 100%);
+                  border-radius: 6px;
+                  position: relative;
+                  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+                }
+                
+                .tov-slider-fill::after {
+                  content: '';
+                  position: absolute;
+                  top: -2px;
+                  right: -2px;
+                  width: 12px;
+                  height: 12px;
+                  background: radial-gradient(circle, #ffffff 0%, #00ff88 100%);
+                  border-radius: 50%;
+                  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.6);
+                }
+                
+                .tov-slider-position {
+                  font-size: 11px;
+                  color: rgba(224, 232, 234, 0.7);
+                  margin-top: 6px;
+                  font-style: italic;
+                  text-align: center;
+                  background: rgba(0, 255, 136, 0.1);
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                  border: 1px solid rgba(0, 255, 136, 0.2);
+                }
+                
+                .tov-brand-info {
+                  background: rgba(0, 255, 136, 0.1);
+                  border: 1px solid rgba(0, 255, 136, 0.3);
+                  border-radius: 8px;
+                  padding: 15px;
+                  margin-bottom: 20px;
+                }
+                
+                .tov-brand-name {
+                  font-size: 18px;
+                  font-weight: 700;
+                  color: #00ff88;
+                  margin-bottom: 8px;
+                  text-align: center;
+                }
+                
+                .tov-brand-personality {
+                  font-size: 13px;
+                  line-height: 1.5;
+                  color: #e0e8ea;
+                  text-align: center;
+                  font-style: italic;
+                }
+                
+                .tov-section-title {
+                  font-size: 16px;
+                  font-weight: 600;
+                  color: #00ff88;
+                  margin: 25px 0 15px 0;
+                  padding-bottom: 8px;
+                  border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+                  text-align: center;
+                }
+                
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+                
+                @keyframes slideIn {
+                  0% { 
+                    opacity: 0; 
+                    transform: translateY(20px);
+                  }
+                  100% { 
+                    opacity: 1; 
+                    transform: translateY(0);
+                  }
+                }
+                
+                .tov-slider-item {
+                  animation: slideIn 0.6s ease-out forwards;
+                }
+                
+                .tov-slider-item:nth-child(1) { animation-delay: 0.1s; }
+                .tov-slider-item:nth-child(2) { animation-delay: 0.2s; }
+                .tov-slider-item:nth-child(3) { animation-delay: 0.3s; }
+                .tov-slider-item:nth-child(4) { animation-delay: 0.4s; }
+                .tov-slider-item:nth-child(5) { animation-delay: 0.5s; }
               </style>
             </head>
             <body>
@@ -1024,6 +1454,7 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
                 <div class="tab active" data-tab="element-tab">Element</div>
                 <div class="tab" data-tab="content-tab">Content</div>
                 <div class="tab" data-tab="context-tab">Context</div>
+                <div class="tab" data-tab="tov-tab">ToV</div>
                 <div class="tab" data-tab="results-tab">Results</div>
               </div>
 
@@ -1057,6 +1488,18 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
                     <p><span class="key">Timestamp:</span> <span class="value">${debugData.timestamp}</span></p>
                     <p><span class="key">Parent:</span> <span class="value">${debugData.context.parent}</span></p>
                     <p><span class="key">Siblings:</span> <span class="value">${debugData.context.siblings}</span></p>
+                  </div>
+                </div>
+
+                <div id="tov-tab" class="tab-panel">
+                  <div class="section">
+                    <h3>🎨 Tone of Voice Analysis</h3>
+                    <div id="tov-visualization" class="tov-container">
+                      <div class="tov-loading">
+                        <div class="tov-spinner"></div>
+                        <span>Run analysis to see Tone of Voice visualization</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1370,6 +1813,9 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         
         if (!resultsSection || !resultsContent) return;
 
+        // Update ToV visualization if tone analysis data is available
+        this.updateTovVisualization(response);
+
         // Check if it's a combined analysis
         const isCombined = response.metadata?.analysisType === 'combined';
         
@@ -1443,6 +1889,150 @@ if (typeof window.InteractiveContentAnalyzer === 'undefined') {
         
       } catch (error) {
         console.error('XCLV: Failed to display analysis results:', error);
+      }
+    }
+
+    updateTovVisualization(response) {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) return;
+
+        const tovVisualization = this.debugWindow.document.getElementById('tov-visualization');
+        if (!tovVisualization) return;
+
+        // Extract ToV data from various possible response structures
+        let tovData = null;
+        let brandName = 'Unknown Brand';
+        let brandPersonality = '';
+
+        // Try different response structures
+        if (response.metadata?.analysisType === 'combined') {
+          tovData = response.data?.toneOfVoice?.tone_analysis || response.data?.toneOfVoice;
+          brandName = response.data?.toneOfVoice?.brand_name || brandName;
+          brandPersonality = response.data?.toneOfVoice?.tone_analysis?.brand_personality || '';
+        } else if (response.data?.tone_analysis) {
+          tovData = response.data.tone_analysis;
+          brandName = response.data.brand_name || brandName;
+          brandPersonality = response.data.tone_analysis.brand_personality || '';
+        } else if (response.data?.formality) {
+          // Direct tone analysis structure
+          tovData = response.data;
+          brandPersonality = response.data.brand_personality || '';
+        }
+
+        if (!tovData) {
+          tovVisualization.innerHTML = `
+            <div class="tov-loading">
+              <span>No Tone of Voice data available in this analysis</span>
+            </div>
+          `;
+          return;
+        }
+
+        // Create the beautiful slider visualization
+        const tovHTML = this.buildTovSliderHTML(tovData, brandName, brandPersonality);
+        tovVisualization.innerHTML = tovHTML;
+
+        // Animate sliders after a brief delay
+        setTimeout(() => {
+          this.animateTovSliders();
+          // Auto-switch to ToV tab to show the beautiful visualization
+          this.showDebugTab('tov-tab');
+        }, 100);
+
+        this.logToDebugPopup('🎨 ToV visualization updated');
+
+      } catch (error) {
+        console.error('XCLV: Failed to update ToV visualization:', error);
+        const tovVisualization = this.debugWindow.document.getElementById('tov-visualization');
+        if (tovVisualization) {
+          tovVisualization.innerHTML = `
+            <div class="tov-loading">
+              <span>Error loading ToV visualization</span>
+            </div>
+          `;
+        }
+      }
+    }
+
+    buildTovSliderHTML(tovData, brandName, brandPersonality) {
+      // Standard ToV dimensions
+      const dimensions = [
+        { key: 'formality', label: 'Formality' },
+        { key: 'warmth', label: 'Warmth' },
+        { key: 'authority', label: 'Authority' },
+        { key: 'authenticity', label: 'Authenticity' },
+        { key: 'innovation', label: 'Innovation' }
+      ];
+
+      let slidersHTML = '';
+
+      // Build sliders for each dimension
+      dimensions.forEach((dimension, index) => {
+        const data = tovData[dimension.key];
+        if (data) {
+          const score = data.score || 0;
+          const position = data.position || 'Unknown';
+          const evidence = data.evidence || '';
+
+          slidersHTML += `
+            <div class="tov-slider-item" style="opacity: 0;">
+              <div class="tov-slider-header">
+                <div class="tov-slider-label">${dimension.label}</div>
+                <div class="tov-slider-value">${score}</div>
+              </div>
+              <div class="tov-slider-track">
+                <div class="tov-slider-fill" style="width: ${score}%;"></div>
+              </div>
+              <div class="tov-slider-position">${position}</div>
+            </div>
+          `;
+        }
+      });
+
+      return `
+        <div class="tov-brand-info">
+          <div class="tov-brand-name">${brandName}</div>
+          ${brandPersonality ? `<div class="tov-brand-personality">${brandPersonality}</div>` : ''}
+        </div>
+        
+        <div class="tov-section-title">Tone of Voice Dimensions</div>
+        
+        <div class="tov-slider-group">
+          ${slidersHTML}
+        </div>
+      `;
+    }
+
+    animateTovSliders() {
+      try {
+        if (!this.debugWindow || this.debugWindow.closed) return;
+
+        const sliderItems = this.debugWindow.document.querySelectorAll('.tov-slider-item');
+        
+        sliderItems.forEach((item, index) => {
+          setTimeout(() => {
+            item.style.opacity = '1';
+            
+            // Trigger the fill animation by resetting and then setting the width
+            const fillElement = item.querySelector('.tov-slider-fill');
+            if (fillElement) {
+              const targetWidth = fillElement.style.width;
+              fillElement.style.width = '0%';
+              
+              // Use requestAnimationFrame to ensure the 0% is applied before animating
+              requestAnimationFrame(() => {
+                setTimeout(() => {
+                  fillElement.style.width = targetWidth;
+                }, 50);
+              });
+            }
+          }, index * 200); // Stagger animations by 200ms
+        });
+
+        this.logToDebugPopup('✨ ToV sliders animated');
+
+      } catch (error) {
+        console.error('XCLV: Failed to animate ToV sliders:', error);
       }
     }
 
@@ -1888,28 +2478,35 @@ if (typeof window.XCLVContentController === 'undefined') {
         const content = this.extractor.extractPageContent();
         const mainText = content.mainContent;
         
-        console.log('XCLV: Extracted content length:', mainText.length);
+        console.log('XCLV: Enhanced content extraction - length:', mainText.length);
+        console.log('XCLV: Content preview:', mainText.substring(0, 200) + '...');
         
         if (!mainText || mainText.length < 50) {
           throw new Error('Insufficient content for analysis');
         }
         
-        const response = await this.sendMessageSafely({
-          action: 'analyzeContent',
-          data: {
-            text: mainText,
-            url: window.location.href,
-            metadata: content.metadata
+        // Use the new modular analysis pipeline
+        const contentData = {
+          text: mainText,
+          metadata: content.metadata,
+          headlines: content.headlines,
+          extractionStats: {
+            contentLength: mainText.length,
+            wordCount: mainText.split(' ').length,
+            headlinesCount: content.headlines.length,
+            extractionEngine: 'enhanced-v2'
           }
-        });
+        };
         
-        console.log('XCLV: Background response:', response);
+        console.log('XCLV: Starting modular analysis pipeline...');
+        const analysisResult = await this.analyzeWithPrompts(contentData);
         
-        if (response && response.success) {
-          this.extractor.analysisData = response.data;
-          return { success: true, data: response.data };
+        if (analysisResult) {
+          this.extractor.analysisData = analysisResult;
+          console.log('XCLV: Modular analysis completed successfully');
+          return { success: true, data: analysisResult };
         } else {
-          throw new Error(response?.error || 'Analysis failed');
+          throw new Error('Modular analysis pipeline failed');
         }
         
       } catch (error) {
@@ -1917,6 +2514,217 @@ if (typeof window.XCLVContentController === 'undefined') {
         this.isAnalyzing = false;
         return { success: false, error: error.message };
       }
+    }
+
+    async analyzeWithPrompts(contentData, selectedPrompts = null) {
+        try {
+            if (!contentData) {
+                throw new Error('No content data provided for analysis');
+            }
+
+            // Use dynamic prompt loading system
+            const promptsToUse = selectedPrompts || await this.getAvailablePrompts();
+            
+            // Create modular analysis requests
+            const analysisRequests = this.createAnalysisRequests(contentData, promptsToUse);
+            
+            console.log(`XCLV: Created ${analysisRequests.length} analysis requests`);
+
+            // Execute modular analysis pipeline
+            const results = await this.executeAnalysisPipeline(analysisRequests);
+
+            return this.combineAnalysisResults(results);
+
+        } catch (error) {
+            console.error('XCLV: Modular analysis failed:', error);
+            throw error;
+        }
+    }
+
+    async getAvailablePrompts() {
+        try {
+            // Request available prompts from background script
+            const response = await this.sendMessageSafely({
+                action: 'getAvailablePrompts'
+            });
+
+            if (response && response.success) {
+                console.log('XCLV: Loaded', Object.keys(response.prompts).length, 'dynamic prompts');
+                return response.prompts;
+            } else {
+                // Fallback to default prompts if dynamic loading fails
+                console.warn('XCLV: Dynamic prompt loading failed, using defaults');
+                return this.getDefaultPrompts();
+            }
+        } catch (error) {
+            console.error('XCLV: Failed to get available prompts:', error);
+            return this.getDefaultPrompts();
+        }
+    }
+
+    getDefaultPrompts() {
+        // Fallback prompts for backward compatibility
+        return {
+            'tone-of-voice': 'Analyze the tone of voice and brand personality of this content',
+            'brand-archetypes': 'Identify the brand archetypes present in this content'
+        };
+    }
+
+    createAnalysisRequests(contentData, prompts) {
+        const requests = [];
+        
+        // Create individual analysis requests for each prompt module
+        Object.entries(prompts).forEach(([promptName, promptContent]) => {
+            requests.push({
+                id: `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                module: promptName,
+                prompt: promptContent,
+                content: contentData,
+                url: window.location.href,
+                timestamp: Date.now()
+            });
+        });
+
+        return requests;
+    }
+
+    async executeAnalysisPipeline(analysisRequests) {
+        const results = [];
+        const maxConcurrent = 2; // Limit concurrent requests to avoid rate limits
+        
+        // Process requests in batches
+        for (let i = 0; i < analysisRequests.length; i += maxConcurrent) {
+            const batch = analysisRequests.slice(i, i + maxConcurrent);
+            
+            console.log(`XCLV: Processing batch ${Math.ceil((i + 1) / maxConcurrent)}/${Math.ceil(analysisRequests.length / maxConcurrent)}...`);
+            
+            // Execute batch concurrently
+            const batchPromises = batch.map(request => this.executeAnalysisRequest(request));
+            const batchResults = await Promise.allSettled(batchPromises);
+            
+            // Process results
+            batchResults.forEach((result, index) => {
+                const request = batch[index];
+                if (result.status === 'fulfilled' && result.value.success) {
+                    results.push({
+                        module: request.module,
+                        id: request.id,
+                        data: result.value.data,
+                        timestamp: request.timestamp,
+                        processingTime: Date.now() - request.timestamp
+                    });
+                } else {
+                    console.warn(`XCLV: Analysis module '${request.module}' failed:`, result.reason || result.value?.error);
+                    // Add failed result for debugging
+                    results.push({
+                        module: request.module,
+                        id: request.id,
+                        error: result.reason || result.value?.error,
+                        timestamp: request.timestamp,
+                        processingTime: Date.now() - request.timestamp
+                    });
+                }
+            });
+            
+            // Small delay between batches to be respectful to API
+            if (i + maxConcurrent < analysisRequests.length) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        
+        return results;
+    }
+
+    async executeAnalysisRequest(request) {
+        try {
+            const response = await this.sendMessageSafely({
+                action: 'analyzeContent',
+                data: {
+                    content: request.content,
+                    url: request.url,
+                    prompt: request.prompt,
+                    module: request.module,
+                    requestId: request.id
+                }
+            });
+
+            return response || { success: false, error: 'No response received' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    combineAnalysisResults(results) {
+        const combined = {
+            timestamp: Date.now(),
+            url: window.location.href,
+            totalModules: results.length,
+            successfulModules: results.filter(r => !r.error).length,
+            failedModules: results.filter(r => r.error).length,
+            totalProcessingTime: results.reduce((sum, r) => sum + r.processingTime, 0),
+            modules: {},
+            metadata: {
+                analysisVersion: '2.0.0-modular',
+                contentExtractionEngine: 'enhanced-v2',
+                pipelineType: 'modular-concurrent'
+            }
+        };
+
+        // Organize results by module
+        results.forEach(result => {
+            combined.modules[result.module] = {
+                success: !result.error,
+                data: result.data,
+                error: result.error,
+                processingTime: result.processingTime,
+                timestamp: result.timestamp,
+                id: result.id
+            };
+        });
+
+        // Maintain backward compatibility with existing result structure
+        const successfulResults = results.filter(r => !r.error);
+        if (successfulResults.length > 0) {
+            // Find tone analysis result for backward compatibility
+            const toneResult = successfulResults.find(r => 
+                r.module.toLowerCase().includes('tone') || 
+                r.data?.tone_analysis
+            );
+            
+            if (toneResult && toneResult.data) {
+                combined.tone_analysis = toneResult.data.tone_analysis || toneResult.data;
+                combined.brand_name = toneResult.data.brand_name || 'Unknown';
+            }
+            
+            // Find archetype analysis for backward compatibility
+            const archetypeResult = successfulResults.find(r => 
+                r.module.toLowerCase().includes('archetype') || 
+                r.data?.archetype_analysis
+            );
+            
+            if (archetypeResult && archetypeResult.data) {
+                combined.archetype_analysis = archetypeResult.data.archetype_analysis || archetypeResult.data;
+            }
+            
+            // Find recommendations for backward compatibility
+            const recommendationsResult = successfulResults.find(r => 
+                r.module.toLowerCase().includes('recommendation') || 
+                r.data?.recommendations
+            );
+            
+            if (recommendationsResult && recommendationsResult.data) {
+                combined.recommendations = recommendationsResult.data.recommendations || recommendationsResult.data;
+            }
+        }
+
+        console.log('XCLV: Combined analysis results:', {
+            totalModules: combined.totalModules,
+            successful: combined.successfulModules,
+            failed: combined.failedModules,
+            processingTime: `${combined.totalProcessingTime}ms`
+        });
+
+        return combined;
     }
 
     stopAnalysis() {

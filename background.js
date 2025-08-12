@@ -10,20 +10,62 @@ class PromptManager {
 
   async initialize() {
     try {
-      // Load all prompts from the prompts folder
-      await Promise.all([
-        this.loadPrompt('comprehensive-brand-analysis'),
-        this.loadPrompt('tone-of-voice-analysis'), 
-        this.loadPrompt('brand-archetype-analysis'),
-        this.loadPrompt('text-element-analysis')
-      ]);
+      // Auto-discover and load all prompts from the prompts folder
+      await this.loadAllPromptsFromFolder();
       
       this.isInitialized = true;
       console.log('XCLV: Prompt Manager initialized with', this.prompts.size, 'prompts');
+      console.log('XCLV: Available prompts:', Array.from(this.prompts.keys()));
     } catch (error) {
       console.error('XCLV: Failed to initialize prompts:', error);
       this.fallbackToBuiltInPrompts();
     }
+  }
+
+  async loadAllPromptsFromFolder() {
+    try {
+      // List of known prompt files to try loading
+      const knownPrompts = [
+        'comprehensive-brand-analysis',
+        'tone-of-voice-analysis',
+        'brand-archetype-analysis', 
+        'text-element-analysis',
+        'competitor-analysis',
+        'content-strategy',
+        'brand-positioning',
+        'messaging-framework'
+      ];
+
+      // Load existing prompts
+      const loadPromises = knownPrompts.map(promptName => this.loadPrompt(promptName));
+      await Promise.allSettled(loadPromises);
+
+      console.log('XCLV: Loaded', this.prompts.size, 'prompt modules');
+    } catch (error) {
+      console.error('XCLV: Error loading prompts from folder:', error);
+      this.fallbackToBuiltInPrompts();
+    }
+  }
+
+  getAllPrompts() {
+    if (!this.isInitialized) {
+      console.warn('XCLV: Prompt Manager not initialized, returning built-in prompts');
+      return this.getBuiltInPrompts();
+    }
+
+    const promptsObject = {};
+    for (const [key, value] of this.prompts.entries()) {
+      promptsObject[key] = value;
+    }
+
+    return promptsObject;
+  }
+
+  getBuiltInPrompts() {
+    return {
+      'tone-of-voice-analysis': this.getBuiltInPrompt('tone-of-voice-analysis'),
+      'brand-archetype-analysis': this.getBuiltInPrompt('brand-archetype-analysis')
+    };
   }
 
   async loadPrompt(promptName) {
@@ -535,9 +577,9 @@ Analyze this web content for brand tone of voice using the Nielsen Norman Group'
     }
   }
 
-  // Method to get available prompts
+  // Method to get available prompts with their content
   getAvailablePrompts() {
-    return Array.from(this.promptManager.prompts.keys());
+    return this.promptManager.getAllPrompts();
   }
 
   // Method to reload prompts (useful for development)

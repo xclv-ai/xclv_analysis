@@ -157,11 +157,11 @@ class ExtensionValidator {
       
       // Check for required HTML elements
       const requiredElements = [
-        'analyzeBtn',
-        'interactiveModeBtn', 
-        'saveApiBtn',
-        'testApiBtn',
-        'apiKeyInput'
+        'analyze-page-btn',
+        'toggle-interactive-btn', 
+        'save-api-btn',
+        'test-api-btn',
+        'api-key-input'
       ];
       
       for (const elementId of requiredElements) {
